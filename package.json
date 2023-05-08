@@ -1,0 +1,15 @@
+{
+  "devDependencies": {
+    "jest": "^29.5.0"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "mysql": "^2.18.1",
+    "mysql2": "^3.3.0",
+    "uuid": "^9.0.0"
+  }
+}
