@@ -1,9 +1,9 @@
 {
   "devDependencies": {
-    "jest": "^29.5.0"
+    "vitest": "^0.31.0"
   },
   "scripts": {
-    "test": "jest"
+    "test": "vitest"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

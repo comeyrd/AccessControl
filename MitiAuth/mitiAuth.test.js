@@ -1,6 +1,6 @@
-const mysql = require("mysql2/promise");
-const MitiAuth = require("./mitiAuth");
-
+import mysql from "mysql2/promise";
+import MitiAuth from "./mitiAuth";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 const TEST_DB_NAME = `test_db_${Math.floor(Math.random() * 1000000)}`;
 
 const mysqlConfigFirst = {
@@ -34,36 +34,38 @@ describe("MitiAuth", () => {
     }
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     mysqlPool.end();
-    con.query("DROP DATABASE " + TEST_DB_NAME + ";");
-    con.end();
+    await con.query("DROP DATABASE " + TEST_DB_NAME + ";");
+    await con.end();
   });
 
   describe("register and login", () => {
-    test("should register and login a regular user", async () => {
+    it("should register and login a regular user", async () => {
       const username = "testuser";
       const password = "testpass";
       const id = await auth.register(username, password, auth.userType.REGULAR);
       expect(typeof id).toBe("string");
       const token = await auth.login(username, password, auth.userType.REGULAR);
       expect(typeof token).toBe("string");
-      const type = await auth.checkJWT(token);
-      expect(type).toBe(auth.userType.REGULAR);
+      const decoded = await auth.checkJWT(token);
+      expect(decoded.type).toBe(auth.userType.REGULAR);
+      await auth.delete(token);
     });
 
-    test("should register and login an admin user", async () => {
+    it("should register and login an admin user", async () => {
       const username = "testadmin";
       const password = "testpass";
       const id = await auth.register(username, password, auth.userType.ADMIN);
       expect(typeof id).toBe("string");
       const token = await auth.login(username, password, auth.userType.ADMIN);
       expect(typeof token).toBe("string");
-      const type = await auth.checkJWT(token);
-      expect(type).toBe(auth.userType.ADMIN);
+      const decoded = await auth.checkJWT(token);
+      expect(decoded.type).toBe(auth.userType.ADMIN);
+      await auth.delete(token);
     });
 
-    test("should throw an error when registering with an invalid user type", async () => {
+    it("should throw an error when registering with an invalid user type", async () => {
       const username = "baduser";
       const password = "badpass";
       const invalidType = "invalid";
@@ -72,7 +74,7 @@ describe("MitiAuth", () => {
       ).rejects.toThrow("Invalid user type");
     });
 
-    test("should throw an error when logging in with an invalid user type", async () => {
+    it("should throw an error when logging in with an invalid user type", async () => {
       const username = "baduser";
       const password = "badpass";
       const invalidType = "invalid";
@@ -81,7 +83,7 @@ describe("MitiAuth", () => {
       );
     });
 
-    test("should throw an error when logging in with an incorrect password", async () => {
+    it("should throw an error when logging in with an incorrect password", async () => {
       const username = "baduserwrong";
       const password = "password";
       const wrongPassword = "wrongpass";
@@ -91,7 +93,7 @@ describe("MitiAuth", () => {
       ).rejects.toThrow("Password does not match");
     });
 
-    test("should throw an error when logging in with a non-existent user", async () => {
+    it("should throw an error when logging in with a non-existent user", async () => {
       const username = "noexistuser";
       const password = "noexistp";
       await expect(
@@ -99,7 +101,7 @@ describe("MitiAuth", () => {
       ).rejects.toThrow("User not found");
     });
 
-    test("should throw an error when bad params", async () => {
+    it("should throw an error when bad params", async () => {
       const goodUs = "user";
       const goodPass = "pass";
       var badUs;
@@ -113,7 +115,7 @@ describe("MitiAuth", () => {
       ).rejects.toThrow("Bad Params");
     });
 
-    test("should throw an error when bad params", async () => {
+    it("should throw an error when bad params", async () => {
       const goodUs = "user";
       const goodPass = "pass";
       var badUs;
@@ -125,6 +127,47 @@ describe("MitiAuth", () => {
       await expect(
         auth.register(goodUs, badPass, auth.userType.REGULAR)
       ).rejects.toThrow("Bad Params");
+    });
+    it("update", async () => {
+      const username = "testuser";
+      const password = "testpass";
+      const id = await auth.register(username, password, auth.userType.REGULAR);
+      expect(typeof id).toBe("string");
+      const token = await auth.login(username, password, auth.userType.REGULAR);
+      expect(typeof token).toBe("string");
+      const newUser = "test2";
+      const newPass = "test3";
+      await auth.update(token, newUser, newPass);
+      const newToken = await auth.login(
+        newUser,
+        newPass,
+        auth.userType.REGULAR
+      );
+      expect(typeof newToken).toBe("string");
+      const decoded = await auth.checkJWT(token);
+      expect(decoded.type).toBe(auth.userType.REGULAR);
+      await auth.delete(token);
+    });
+    it("testdelete", async () => {
+      const username = "testuser";
+      const password = "testpass";
+      const id = await auth.register(username, password, auth.userType.REGULAR);
+      expect(typeof id).toBe("string");
+      const token = await auth.login(username, password, auth.userType.REGULAR);
+      expect(typeof token).toBe("string");
+      await auth.delete(token);
+      await expect(
+        auth.login(username, password, auth.userType.REGULAR)
+      ).rejects.toThrow("User not found");
+    });
+    it("testAlreadyExistinguser", async () => {
+      const username = "testuser";
+      const password = "testpass";
+      const id = await auth.register(username, password, auth.userType.REGULAR);
+      expect(typeof id).toBe("string");
+      await expect(
+        auth.register(username, password, auth.userType.REGULAR)
+      ).rejects.toThrow("User Already Exists");
     });
   });
 });

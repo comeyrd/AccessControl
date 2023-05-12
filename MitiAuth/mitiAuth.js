@@ -1,11 +1,13 @@
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
-const uuid = require("uuid");
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { v4 } from "uuid";
+import { FieldPacket, Pool, Query } from "mysql2/promise";
+import { RowDataPacket } from "mysql2";
 
 class MitiAuth {
   constructor(mysqlPool) {
     this.mysqlPool = mysqlPool;
-    this.jwtSecret = uuid.v4();
+    this.jwtSecret = v4();
     this.jwtExpiration = "3d";
     this.userType = {
       ADMIN: "admin",
@@ -34,14 +36,20 @@ class MitiAuth {
     if (!(type === this.userType.ADMIN || type === this.userType.REGULAR)) {
       throw new Error("Invalid user type");
     }
-    if (typeof username != "string" || typeof password != "string") {
+    if (typeof username !== "string" || typeof password !== "string") {
       throw new Error("Bad Params");
     }
-    const uuidv4 = uuid.v4();
+    //verifier si l'user existe
+    const selectQuery = `SELECT id FROM ${type}_users WHERE username = ?`;
+    const rows = await this.mysqlPool.query(selectQuery, [username]);
+    if (rows[0].length != 0) {
+      throw new Error("User Already Exists");
+    }
+    const uuidv4 = v4();
     const hashedPassword = await bcrypt.hash(password, 10);
-    const query = `INSERT INTO ${type}_users (id, username, password) VALUES (?, ?, ?)`;
+    const insertQuery = `INSERT INTO ${type}_users (id, username, password) VALUES (?, ?, ?)`;
     const params = [uuidv4, username, hashedPassword];
-    await this.mysqlPool.query(query, params);
+    await this.mysqlPool.query(insertQuery, params);
     return uuidv4;
   }
 
@@ -49,30 +57,53 @@ class MitiAuth {
     if (!(type === this.userType.ADMIN || type === this.userType.REGULAR)) {
       throw new Error("Invalid user type");
     }
-    if (typeof username != "string" || typeof password != "string") {
+    if (typeof username !== "string" || typeof password !== "string") {
       throw new Error("Bad Params");
     }
     const query = `SELECT id, password FROM ${type}_users WHERE username = ?`;
-    var rows = await this.mysqlPool.query(query, [username]).catch((error) => {
-      if (error) {
-        console.log(error);
-      }
-    });
-    rows = rows[0];
+    const [rows] = await this.mysqlPool
+      .query(query, [username])
+      .catch((error) => {
+        if (error) {
+          throw error;
+        }
+      });
     if (rows.length === 0) {
       throw new Error("User not found");
-    } else {
-      const userId = rows[0].id;
-      const hashedPassword = rows[0].password;
-      const passwordMatch = await bcrypt.compare(password, hashedPassword);
-      if (passwordMatch) {
-        return jwt.sign({ userId, type }, this.jwtSecret, {
-          expiresIn: this.jwtExpiration,
-        });
-      } else {
-        throw new Error("Password does not match");
-      }
     }
+    const userId = rows[0].id;
+    const hashedPassword = rows[0].password;
+    const passwordMatch = await bcrypt.compare(password, hashedPassword);
+    if (passwordMatch) {
+      return jwt.sign({ userId, type }, this.jwtSecret, {
+        expiresIn: this.jwtExpiration,
+      });
+    }
+    throw new Error("Password does not match");
+  }
+
+  async update(token, newusername, newpassword) {
+    if (typeof newusername !== "string" || typeof newpassword !== "string") {
+      throw new Error("Bad Params");
+    }
+    const decoded = await this.checkJWT(token).catch((error) => {
+      throw error;
+    });
+    const hashedPassword = await bcrypt.hash(newpassword, 10);
+    const query = `UPDATE ${decoded.type}_users SET username= ?, password= ? WHERE id = ? ;`;
+    console.log(query);
+    const params = [newusername, hashedPassword, decoded.userId];
+    await this.mysqlPool.query(query, params);
+    return decoded.userId;
+  }
+
+  async delete(token) {
+    const decoded = await this.checkJWT(token).catch((error) => {
+      throw error;
+    });
+    const query = `DELETE FROM ${decoded.type}_users WHERE id = ?`;
+    const params = [decoded.userId];
+    await this.mysqlPool.query(query, params);
   }
 
   async checkJWT(token) {
@@ -81,11 +112,11 @@ class MitiAuth {
         if (err) {
           reject(err);
         } else {
-          resolve(decoded.type);
+          resolve(decoded);
         }
       });
     });
   }
 }
 
-module.exports = MitiAuth;
+export default MitiAuth;
