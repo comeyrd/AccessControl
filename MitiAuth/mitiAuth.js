@@ -5,14 +5,16 @@ import { FieldPacket, Pool, Query } from "mysql2/promise";
 import { RowDataPacket } from "mysql2";
 
 class MitiAuth {
+  userType = {
+    ADMIN: "admin",
+    REGULAR: "regular",
+  };
+  table = "_users";
+  jwtExpiration = "3d";
+  jwtSecret = v4();
+
   constructor(mysqlPool) {
     this.mysqlPool = mysqlPool;
-    this.jwtSecret = v4();
-    this.jwtExpiration = "3d";
-    this.userType = {
-      ADMIN: "admin",
-      REGULAR: "regular",
-    };
   }
 
   async init() {
@@ -21,7 +23,7 @@ class MitiAuth {
       const value = this.userType[key];
       promises.push(
         this.mysqlPool.query(`
-      CREATE TABLE IF NOT EXISTS ${value}_users (
+      CREATE TABLE IF NOT EXISTS ${value}${this.table} (
         id VARCHAR(36) NOT NULL PRIMARY KEY,
         username VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL
@@ -40,14 +42,14 @@ class MitiAuth {
       throw new Error("Bad Params");
     }
     //verifier si l'user existe
-    const selectQuery = `SELECT id FROM ${type}_users WHERE username = ?`;
+    const selectQuery = `SELECT id FROM ${type}${this.table} WHERE username = ?`;
     const rows = await this.mysqlPool.query(selectQuery, [username]);
     if (rows[0].length != 0) {
       throw new Error("User Already Exists");
     }
     const uuidv4 = v4();
     const hashedPassword = await bcrypt.hash(password, 10);
-    const insertQuery = `INSERT INTO ${type}_users (id, username, password) VALUES (?, ?, ?)`;
+    const insertQuery = `INSERT INTO ${type}${this.table} (id, username, password) VALUES (?, ?, ?)`;
     const params = [uuidv4, username, hashedPassword];
     await this.mysqlPool.query(insertQuery, params);
     return uuidv4;
@@ -60,7 +62,7 @@ class MitiAuth {
     if (typeof username !== "string" || typeof password !== "string") {
       throw new Error("Bad Params");
     }
-    const query = `SELECT id, password FROM ${type}_users WHERE username = ?`;
+    const query = `SELECT id, password FROM ${type}${this.table} WHERE username = ?`;
     const [rows] = await this.mysqlPool
       .query(query, [username])
       .catch((error) => {
@@ -90,7 +92,7 @@ class MitiAuth {
       throw error;
     });
     const hashedPassword = await bcrypt.hash(newpassword, 10);
-    const query = `UPDATE ${decoded.type}_users SET username= ?, password= ? WHERE id = ? ;`;
+    const query = `UPDATE ${decoded.type}${this.table} SET username= ?, password= ? WHERE id = ? ;`;
     console.log(query);
     const params = [newusername, hashedPassword, decoded.userId];
     await this.mysqlPool.query(query, params);
@@ -101,7 +103,7 @@ class MitiAuth {
     const decoded = await this.checkJWT(token).catch((error) => {
       throw error;
     });
-    const query = `DELETE FROM ${decoded.type}_users WHERE id = ?`;
+    const query = `DELETE FROM ${decoded.type}${this.table} WHERE id = ?`;
     const params = [decoded.userId];
     await this.mysqlPool.query(query, params);
   }
