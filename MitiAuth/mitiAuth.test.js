@@ -1,13 +1,14 @@
-const mysql = require("mysql2");
+const mysql = require("mysql2/promise");
 const MitiAuth = require("./mitiAuth");
 
 const TEST_DB_NAME = `test_db_${Math.floor(Math.random() * 1000000)}`;
 
-var con = mysql.createConnection({
+const mysqlConfigFirst = {
   host: "127.0.0.1",
   user: "toto",
   password: "password",
-});
+  database: "",
+};
 
 const mysqlConfig = {
   host: "localhost",
@@ -17,30 +18,25 @@ const mysqlConfig = {
 };
 
 var mysqlPool;
-
+let con;
 describe("MitiAuth", () => {
   let auth;
   beforeAll(async () => {
     try {
-      con.connect();
-      con.query(`CREATE DATABASE ${TEST_DB_NAME}`);
-      mysqlPool = mysql.createPool(mysqlConfig);
-      mysqlPool.query("DROP TABLE IF EXISTS admin_users, regular_users;");
+      con = await mysql.createConnection(mysqlConfigFirst);
+      await con.query(`CREATE DATABASE ${TEST_DB_NAME}`);
+      mysqlPool = await mysql.createPool(mysqlConfig);
+      await mysqlPool.query("DROP TABLE IF EXISTS admin_users, regular_users;");
       auth = new MitiAuth(mysqlPool);
-      await new Promise((resolve, reject) => {
-        auth.init((err) => {
-          if (err) return reject(err);
-          resolve();
-        });
-      });
-    } catch (err) {
-      throw err;
+      await auth.init();
+    } catch (e) {
+      console.log(e);
     }
   });
 
   afterAll(() => {
     mysqlPool.end();
-    con.query("DROP DATABASE " + TEST_DB_NAME + ";", (err, result) => {});
+    con.query("DROP DATABASE " + TEST_DB_NAME + ";");
     con.end();
   });
 
@@ -101,6 +97,34 @@ describe("MitiAuth", () => {
       await expect(
         auth.login(username, password, auth.userType.REGULAR)
       ).rejects.toThrow("User not found");
+    });
+
+    test("should throw an error when bad params", async () => {
+      const goodUs = "user";
+      const goodPass = "pass";
+      var badUs;
+      var badPass;
+      await expect(
+        auth.login(badUs, goodPass, auth.userType.REGULAR)
+      ).rejects.toThrow("Bad Params");
+      var password;
+      await expect(
+        auth.login(goodUs, badPass, auth.userType.REGULAR)
+      ).rejects.toThrow("Bad Params");
+    });
+
+    test("should throw an error when bad params", async () => {
+      const goodUs = "user";
+      const goodPass = "pass";
+      var badUs;
+      var badPass;
+      await expect(
+        auth.register(badUs, goodPass, auth.userType.REGULAR)
+      ).rejects.toThrow("Bad Params");
+      var password;
+      await expect(
+        auth.register(goodUs, badPass, auth.userType.REGULAR)
+      ).rejects.toThrow("Bad Params");
     });
   });
 });
