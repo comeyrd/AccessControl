@@ -34,6 +34,10 @@ class MitiAccount {
     }
     return Promise.all(promises);
   }
+  async create() {}
+  async read() {}
+  async update() {}
+  async delete() {}
 }
 
 export default MitiAccount;

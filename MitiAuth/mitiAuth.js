@@ -1,8 +1,6 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { v4 } from "uuid";
-import { FieldPacket, Pool, Query } from "mysql2/promise";
-import { RowDataPacket } from "mysql2";
 
 class MitiAuth {
   userType = {
