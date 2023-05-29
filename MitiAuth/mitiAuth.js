@@ -1,18 +1,19 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { v4 } from "uuid";
+const defaultUser = {
+  ADMIN: "admin",
+  REGULAR: "regular",
+};
 
 class MitiAuth {
-  userType = {
-    ADMIN: "admin",
-    REGULAR: "regular",
-  };
   table = "_users";
   jwtExpiration = "3d";
   jwtSecret = v4();
 
-  constructor(mysqlPool) {
+  constructor(mysqlPool, typOfUser = defaultUser) {
     this.mysqlPool = mysqlPool;
+    this.userType = typOfUser;
   }
 
   async init() {
@@ -91,7 +92,6 @@ class MitiAuth {
     });
     const hashedPassword = await bcrypt.hash(newpassword, 10);
     const query = `UPDATE ${decoded.type}${this.table} SET username= ?, password= ? WHERE id = ? ;`;
-    console.log(query);
     const params = [newusername, hashedPassword, decoded.userId];
     await this.mysqlPool.query(query, params);
     return decoded.userId;

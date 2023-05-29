@@ -10,6 +10,12 @@ const mysqlConfigFirst = {
   database: "",
 };
 
+const userTypes = {
+  ADMIN: "admin",
+  REGULAR: "regular",
+  PROTECTED: "protected",
+};
+
 const mysqlConfig = {
   host: "localhost",
   user: "toto",
@@ -17,7 +23,7 @@ const mysqlConfig = {
   database: TEST_DB_NAME,
 };
 
-var mysqlPool;
+let mysqlPool;
 let con;
 describe("MitiAuth", () => {
   let auth;
@@ -26,8 +32,7 @@ describe("MitiAuth", () => {
       con = await mysql.createConnection(mysqlConfigFirst);
       await con.query(`CREATE DATABASE ${TEST_DB_NAME}`);
       mysqlPool = await mysql.createPool(mysqlConfig);
-      await mysqlPool.query("DROP TABLE IF EXISTS admin_users, regular_users;");
-      auth = new MitiAuth(mysqlPool);
+      auth = new MitiAuth(mysqlPool, userTypes);
       await auth.init();
     } catch (e) {
       console.log(e);
@@ -44,24 +49,24 @@ describe("MitiAuth", () => {
     it("should register and login a regular user", async () => {
       const username = "testuser";
       const password = "testpass";
-      const id = await auth.register(username, password, auth.userType.REGULAR);
+      const id = await auth.register(username, password, userTypes.REGULAR);
       expect(typeof id).toBe("string");
-      const token = await auth.login(username, password, auth.userType.REGULAR);
+      const token = await auth.login(username, password, userTypes.REGULAR);
       expect(typeof token).toBe("string");
       const decoded = await auth.checkJWT(token);
-      expect(decoded.type).toBe(auth.userType.REGULAR);
+      expect(decoded.type).toBe(userTypes.REGULAR);
       await auth.delete(token);
     });
 
     it("should register and login an admin user", async () => {
       const username = "testadmin";
       const password = "testpass";
-      const id = await auth.register(username, password, auth.userType.ADMIN);
+      const id = await auth.register(username, password, userTypes.ADMIN);
       expect(typeof id).toBe("string");
-      const token = await auth.login(username, password, auth.userType.ADMIN);
+      const token = await auth.login(username, password, userTypes.ADMIN);
       expect(typeof token).toBe("string");
       const decoded = await auth.checkJWT(token);
-      expect(decoded.type).toBe(auth.userType.ADMIN);
+      expect(decoded.type).toBe(userTypes.ADMIN);
       await auth.delete(token);
     });
 
@@ -87,9 +92,9 @@ describe("MitiAuth", () => {
       const username = "baduserwrong";
       const password = "password";
       const wrongPassword = "wrongpass";
-      await auth.register(username, password, auth.userType.REGULAR);
+      await auth.register(username, password, userTypes.REGULAR);
       await expect(
-        auth.login(username, wrongPassword, auth.userType.REGULAR)
+        auth.login(username, wrongPassword, userTypes.REGULAR)
       ).rejects.toThrow("Password does not match");
     });
 
@@ -97,7 +102,7 @@ describe("MitiAuth", () => {
       const username = "noexistuser";
       const password = "noexistp";
       await expect(
-        auth.login(username, password, auth.userType.REGULAR)
+        auth.login(username, password, userTypes.REGULAR)
       ).rejects.toThrow("User not found");
     });
 
@@ -107,11 +112,11 @@ describe("MitiAuth", () => {
       var badUs;
       var badPass;
       await expect(
-        auth.login(badUs, goodPass, auth.userType.REGULAR)
+        auth.login(badUs, goodPass, userTypes.REGULAR)
       ).rejects.toThrow("Bad Params");
       var password;
       await expect(
-        auth.login(goodUs, badPass, auth.userType.REGULAR)
+        auth.login(goodUs, badPass, userTypes.REGULAR)
       ).rejects.toThrow("Bad Params");
     });
 
@@ -121,52 +126,48 @@ describe("MitiAuth", () => {
       var badUs;
       var badPass;
       await expect(
-        auth.register(badUs, goodPass, auth.userType.REGULAR)
+        auth.register(badUs, goodPass, userTypes.REGULAR)
       ).rejects.toThrow("Bad Params");
       var password;
       await expect(
-        auth.register(goodUs, badPass, auth.userType.REGULAR)
+        auth.register(goodUs, badPass, userTypes.REGULAR)
       ).rejects.toThrow("Bad Params");
     });
     it("update", async () => {
       const username = "testuser";
       const password = "testpass";
-      const id = await auth.register(username, password, auth.userType.REGULAR);
+      const id = await auth.register(username, password, userTypes.REGULAR);
       expect(typeof id).toBe("string");
-      const token = await auth.login(username, password, auth.userType.REGULAR);
+      const token = await auth.login(username, password, userTypes.REGULAR);
       expect(typeof token).toBe("string");
       const newUser = "test2";
       const newPass = "test3";
       await auth.update(token, newUser, newPass);
-      const newToken = await auth.login(
-        newUser,
-        newPass,
-        auth.userType.REGULAR
-      );
+      const newToken = await auth.login(newUser, newPass, userTypes.REGULAR);
       expect(typeof newToken).toBe("string");
       const decoded = await auth.checkJWT(token);
-      expect(decoded.type).toBe(auth.userType.REGULAR);
+      expect(decoded.type).toBe(userTypes.REGULAR);
       await auth.delete(token);
     });
     it("testdelete", async () => {
       const username = "testuser";
       const password = "testpass";
-      const id = await auth.register(username, password, auth.userType.REGULAR);
+      const id = await auth.register(username, password, userTypes.REGULAR);
       expect(typeof id).toBe("string");
-      const token = await auth.login(username, password, auth.userType.REGULAR);
+      const token = await auth.login(username, password, userTypes.REGULAR);
       expect(typeof token).toBe("string");
       await auth.delete(token);
       await expect(
-        auth.login(username, password, auth.userType.REGULAR)
+        auth.login(username, password, userTypes.REGULAR)
       ).rejects.toThrow("User not found");
     });
     it("testAlreadyExistinguser", async () => {
       const username = "testuser";
       const password = "testpass";
-      const id = await auth.register(username, password, auth.userType.REGULAR);
+      const id = await auth.register(username, password, userTypes.REGULAR);
       expect(typeof id).toBe("string");
       await expect(
-        auth.register(username, password, auth.userType.REGULAR)
+        auth.register(username, password, userTypes.REGULAR)
       ).rejects.toThrow("User Already Exists");
     });
   });
