@@ -34,7 +34,7 @@ class MitiAuth {
   }
 
   async register(username, password, type) {
-    if (!(type === this.userType.ADMIN || type === this.userType.REGULAR)) {
+    if (!Object.values(this.userType).includes(type)) {
       throw new Error("Invalid user type");
     }
     if (typeof username !== "string" || typeof password !== "string") {
@@ -55,7 +55,7 @@ class MitiAuth {
   }
 
   async login(username, password, type) {
-    if (!(type === this.userType.ADMIN || type === this.userType.REGULAR)) {
+    if (!Object.values(this.userType).includes(type)) {
       throw new Error("Invalid user type");
     }
     if (typeof username !== "string" || typeof password !== "string") {
