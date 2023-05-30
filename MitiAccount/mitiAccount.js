@@ -18,6 +18,13 @@ class MitiAccount {
     this.mysqlPool = mysqlPool;
   }
 
+  async #query(str, params) {
+    const sql = this.mysqlPool.format(str, params);
+    // console.log(sql); //TODO remove
+    const [rows] = await this.mysqlPool.query(sql);
+    return rows;
+  }
+
   async init() {
     const promises = [];
     let query = "";
@@ -29,9 +36,8 @@ class MitiAccount {
     for (const key in this.userType) {
       const value = this.userType[key];
       promises.push(
-        this.mysqlPool.query(`
-      CREATE TABLE IF NOT EXISTS ${value}${this.table} (
-        id VARCHAR(36) NOT NULL PRIMARY KEY,${query}
+        this
+          .#query(`CREATE TABLE IF NOT EXISTS ${value}${this.table} (id VARCHAR(36) NOT NULL PRIMARY KEY,${query}
       )
     `)
       );
@@ -55,24 +61,17 @@ class MitiAccount {
       throw new Error("User Info Already Existing");
     }
     //TODO Check user ID with mitiAuth
-    let rows = "";
-    let values = "";
-    let params = [id];
+    const rows = Object.keys(this.tableRows).join(", ");
+    const values = Object.keys(this.tableRows)
+      .map(() => `?`)
+      .join(", ");
+    const params = [id].concat(
+      Object.keys(this.tableRows).map((key) => userObject[key])
+    );
 
-    for (const key in this.tableRows) {
-      if (this.tableRows.hasOwnProperty(key)) {
-        rows += `${key}, `;
-        values += "?, ";
-        params.push(userObject[key]);
-      }
-    }
-    // Remove the last ", " from rows and values
-    rows = rows.slice(0, -2);
-    values = values.slice(0, -2);
-
-    const createSQL = `INSERT INTO ${type}${this.table} (id,${rows}) VALUES (?,${values})`;
-    const createQuery = await this.mysqlPool.query(createSQL, params);
-    if (createQuery[0]["affectedRows"] !== 1) {
+    const createSQL = `INSERT INTO ${type}${this.table} (id,${rows}) VALUES (?, ${values})`;
+    const createQuery = await this.#query(createSQL, params);
+    if (createQuery["affectedRows"] !== 1) {
       throw new Error("Didn't create user info");
     }
   }
@@ -88,11 +87,11 @@ class MitiAccount {
     //TODO Check user ID with mitiAuth
     const selectSQL = `SELECT * FROM ${type}${this.table} WHERE id = ?`;
     const params = [id];
-    const selectQuery = await this.mysqlPool.query(selectSQL, params);
-    if (selectQuery[0].length === 0) {
+    const selectQuery = await this.#query(selectSQL, params);
+    if (selectQuery.length === 0) {
       throw new Error("No userinfo at this id");
     }
-    return selectQuery[0][0];
+    return selectQuery[0];
   }
   async update(userObject, id, type) {
     if (!this.validateUserObject(userObject)) {
@@ -115,7 +114,7 @@ class MitiAccount {
     // Remove the last ", " from rows and values
     updateMagic = updateMagic.slice(0, -2);
     const updateSQL = `UPDATE ${type}${this.table} SET ${updateMagic} WHERE id = ? ;`;
-    const updateQuery = await this.mysqlPool.query(updateSQL, params);
+    const updateQuery = await this.#query(updateSQL, params);
   }
 
   async delete(id, type) {
@@ -124,8 +123,8 @@ class MitiAccount {
     if (!Object.values(this.userType).includes(type)) {
       throw new Error("Invalid user type");
     }
-    const updateSQL = ` DELETE FROM ${type}${this.table} WHERE id = ? ;`;
-    const updateQuery = await this.mysqlPool.query(updateSQL, params);
+    const updateSQL = `DELETE FROM ${type}${this.table} WHERE id = ? ;`;
+    const updateQuery = await this.#query(updateSQL, params);
   }
 
   validateUserObject(userObject) {

@@ -16,12 +16,19 @@ class MitiAuth {
     this.userType = typOfUser;
   }
 
+  async #query(str, params) {
+    const sql = this.mysqlPool.format(str, params);
+    // console.log(sql); //TODO remove
+    const [rows] = await this.mysqlPool.query(sql);
+    return rows;
+  }
+
   async init() {
     const promises = [];
     for (const key in this.userType) {
       const value = this.userType[key];
       promises.push(
-        this.mysqlPool.query(`
+        this.#query(`
       CREATE TABLE IF NOT EXISTS ${value}${this.table} (
         id VARCHAR(36) NOT NULL PRIMARY KEY,
         username VARCHAR(255) NOT NULL UNIQUE,
@@ -42,15 +49,15 @@ class MitiAuth {
     }
     //verifier si l'user existe
     const selectQuery = `SELECT id FROM ${type}${this.table} WHERE username = ?`;
-    const rows = await this.mysqlPool.query(selectQuery, [username]);
-    if (rows[0].length != 0) {
+    const rows = await this.#query(selectQuery, [username]);
+    if (rows.length != 0) {
       throw new Error("User Already Exists");
     }
     const uuidv4 = v4();
     const hashedPassword = await bcrypt.hash(password, 10);
     const insertQuery = `INSERT INTO ${type}${this.table} (id, username, password) VALUES (?, ?, ?)`;
     const params = [uuidv4, username, hashedPassword];
-    await this.mysqlPool.query(insertQuery, params);
+    await this.#query(insertQuery, params);
     return uuidv4;
   }
 
@@ -62,13 +69,7 @@ class MitiAuth {
       throw new Error("Bad Params");
     }
     const query = `SELECT id, password FROM ${type}${this.table} WHERE username = ?`;
-    const [rows] = await this.mysqlPool
-      .query(query, [username])
-      .catch((error) => {
-        if (error) {
-          throw error;
-        }
-      });
+    const rows = await this.#query(query, [username]);
     if (rows.length === 0) {
       throw new Error("User not found");
     }
@@ -93,7 +94,7 @@ class MitiAuth {
     const hashedPassword = await bcrypt.hash(newpassword, 10);
     const query = `UPDATE ${decoded.type}${this.table} SET username= ?, password= ? WHERE id = ? ;`;
     const params = [newusername, hashedPassword, decoded.userId];
-    await this.mysqlPool.query(query, params);
+    await this.#query(query, params);
     return decoded.userId;
   }
 
@@ -103,7 +104,7 @@ class MitiAuth {
     });
     const query = `DELETE FROM ${decoded.type}${this.table} WHERE id = ?`;
     const params = [decoded.userId];
-    await this.mysqlPool.query(query, params);
+    await this.#query(query, params);
   }
 
   async checkJWT(token) {

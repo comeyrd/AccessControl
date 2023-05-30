@@ -44,7 +44,7 @@ describe("MitiAuth", () => {
     await con.query("DROP DATABASE " + TEST_DB_NAME + ";");
     await con.end();
   });
-
+  //TODO concurrent
   describe("register and login", () => {
     //test where userType doesnt Matter
     for (const UserKeyType in userTypes) {
