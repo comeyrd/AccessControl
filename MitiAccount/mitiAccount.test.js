@@ -1,5 +1,4 @@
 import mysql from "mysql2/promise";
-import MitiAuth from "./mitiAccount";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import MitiAccount from "./mitiAccount";
 const TEST_DB_NAME = `test_db_${Math.floor(Math.random() * 1000000)}`;
@@ -30,7 +29,7 @@ const mysqlConfig = {
   database: TEST_DB_NAME,
 };
 
-var mysqlPool;
+let mysqlPool;
 let con;
 describe("MitiAccount", () => {
   let account;
@@ -55,7 +54,7 @@ describe("MitiAccount", () => {
   describe("MitiAccount", () => {
     for (const UserKeyType in UserType) {
       it("Create userinfo", async () => {
-        var randomValues = {};
+        let randomValues = {};
         for (const key of account.readRow()) {
           randomValues[key] = Math.random().toString(36).substring(2, 15);
         }
@@ -63,9 +62,9 @@ describe("MitiAccount", () => {
         await account.create(randomValues, id, UserType[UserKeyType]);
         const result = await account.read(id, UserType[UserKeyType]);
         randomValues["id"] = id;
-        var error = 0;
+        let error = 0;
         for (const key in randomValues) {
-          if (!(randomValues[key] === result[key])) {
+          if (randomValues[key] !== result[key]) {
             error = error + 1;
           }
         }
@@ -75,7 +74,7 @@ describe("MitiAccount", () => {
         await account.delete(id, UserType[UserKeyType]);
       });
       it("Create & Update userinfo", async () => {
-        var randomValues = {};
+        let randomValues = {};
         for (const key of account.readRow()) {
           randomValues[key] = Math.random().toString(36).substring(2, 15);
         }
@@ -90,7 +89,7 @@ describe("MitiAccount", () => {
         let error = 0;
         const result2 = await account.read(id, UserType[UserKeyType]);
         for (const key in randomValues) {
-          if (!(randomValues[key] === result2[key])) {
+          if (randomValues[key] !== result2[key]) {
             error = error + 1;
           }
         }
@@ -100,17 +99,17 @@ describe("MitiAccount", () => {
         await account.delete(id, UserType[UserKeyType]);
       });
       it("Update not existing userinfo", async () => {
-        var randomValues = {};
+        let randomValues = {};
         for (const key of account.readRow()) {
           randomValues[key] = Math.random().toString(36).substring(2, 15);
         }
         const id = "34";
-        await await expect(
+        await expect(
           account.update(randomValues, id, UserType[UserKeyType])
         ).rejects.toThrow("No userinfo at this id");
       });
       it("Read not existing userinfo", async () => {
-        var randomValues = {};
+        let randomValues = {};
         for (const key of account.readRow()) {
           randomValues[key] = Math.random().toString(36).substring(2, 15);
         }
@@ -128,13 +127,13 @@ describe("MitiAccount", () => {
         );
       });
       it("Create already existing userinfo", async () => {
-        var randomValues = {};
+        let randomValues = {};
         for (const key of account.readRow()) {
           randomValues[key] = Math.random().toString(36).substring(2, 15);
         }
         const id = "12";
         await account.create(randomValues, id, UserType[UserKeyType]);
-        await await expect(
+        await expect(
           account.create(randomValues, id, UserType[UserKeyType])
         ).rejects.toThrow("User Info Already Existing");
         await account.delete(id, UserType[UserKeyType]);
