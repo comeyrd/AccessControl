@@ -89,12 +89,11 @@ describe("MitiAuth", () => {
       it("should throw an error when bad params", async () => {
         const goodUs = "user";
         const goodPass = "pass";
-        var badUs;
-        var badPass;
+        let badUs;
+        let badPass;
         await expect(
           auth.login(badUs, goodPass, userTypes[UserKeyType])
         ).rejects.toThrow("Bad Params");
-        var password;
         await expect(
           auth.login(goodUs, badPass, userTypes[UserKeyType])
         ).rejects.toThrow("Bad Params");

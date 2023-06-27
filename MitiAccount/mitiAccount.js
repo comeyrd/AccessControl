@@ -114,7 +114,7 @@ class MitiAccount {
     // Remove the last ", " from rows and values
     updateMagic = updateMagic.slice(0, -2);
     const updateSQL = `UPDATE ${type}${this.table} SET ${updateMagic} WHERE id = ? ;`;
-    const updateQuery = await this.#query(updateSQL, params);
+    await this.#query(updateSQL, params);
   }
 
   async delete(id, type) {
@@ -124,7 +124,7 @@ class MitiAccount {
       throw new Error("Invalid user type");
     }
     const updateSQL = `DELETE FROM ${type}${this.table} WHERE id = ? ;`;
-    const updateQuery = await this.#query(updateSQL, params);
+    await this.#query(updateSQL, params);
   }
 
   validateUserObject(userObject) {
