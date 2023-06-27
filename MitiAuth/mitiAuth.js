@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { v4 } from "uuid";
+import MitiSettings from "../MitiSettings/mitiSettings";
 const defaultUser = {
   ADMIN: "admin",
   REGULAR: "regular",
@@ -11,9 +12,9 @@ class MitiAuth {
   jwtExpiration = "3d";
   jwtSecret = v4();
 
-  constructor(mysqlPool, typOfUser = defaultUser) {
+  constructor(mysqlPool, mitiSettings = new MitiSettings()) {
     this.mysqlPool = mysqlPool;
-    this.userType = typOfUser;
+    this.msettings = mitiSettings;
   }
 
   async #query(str, params) {
@@ -25,8 +26,8 @@ class MitiAuth {
 
   async init() {
     const promises = [];
-    for (const key in this.userType) {
-      const value = this.userType[key];
+    for (const key in this.msettings.userType) {
+      const value = this.msettings.userType[key];
       promises.push(
         this.#query(`
       CREATE TABLE IF NOT EXISTS ${value}${this.table} (
@@ -41,7 +42,7 @@ class MitiAuth {
   }
 
   async register(username, password, type) {
-    if (!Object.values(this.userType).includes(type)) {
+    if (!Object.values(this.msettings.userType).includes(type)) {
       throw new Error("Invalid user type");
     }
     if (typeof username !== "string" || typeof password !== "string") {
@@ -62,7 +63,7 @@ class MitiAuth {
   }
 
   async login(username, password, type) {
-    if (!Object.values(this.userType).includes(type)) {
+    if (!Object.values(this.msettings.userType).includes(type)) {
       throw new Error("Invalid user type");
     }
     if (typeof username !== "string" || typeof password !== "string") {

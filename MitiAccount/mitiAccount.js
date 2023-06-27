@@ -1,21 +1,9 @@
-const defaultTableRows = {
-  email: "VARCHAR(80)",
-  fname: "VARCHAR(80)",
-  lname: "VARCHAR(80)",
-  phone: "VARCHAR(80)",
-  address: "VARCHAR(80)",
-  ass: "VARCHAR(80)",
-};
-const defaultUserType = {
-  ADMIN: "admin",
-  REGULAR: "regular",
-};
+import MitiSettings from "../MitiSettings/mitiSettings";
 class MitiAccount {
   table = "_uinfo";
-  constructor(mysqlPool, usrType = defaultUserType, tblRow = defaultTableRows) {
-    this.tableRows = tblRow;
-    this.userType = usrType;
+  constructor(mysqlPool, mitiSettings = new MitiSettings()) {
     this.mysqlPool = mysqlPool;
+    this.msettings = mitiSettings;
   }
 
   async #query(str, params) {
@@ -28,13 +16,13 @@ class MitiAccount {
   async init() {
     const promises = [];
     let query = "";
-    for (const key in this.tableRows) {
-      query += `${key} ${this.tableRows[key]}, `;
+    for (const key in this.msettings.tableRows) {
+      query += `${key} ${this.msettings.tableRows[key]}, `;
     }
     query = query.slice(0, -2);
 
-    for (const key in this.userType) {
-      const value = this.userType[key];
+    for (const key in this.msettings.userType) {
+      const value = this.msettings.userType[key];
       promises.push(
         this
           .#query(`CREATE TABLE IF NOT EXISTS ${value}${this.table} (id VARCHAR(36) NOT NULL PRIMARY KEY,${query}
@@ -48,7 +36,7 @@ class MitiAccount {
     if (!this.validateUserObject(userObject)) {
       throw new Error("Invalid User Informations");
     }
-    if (!Object.values(this.userType).includes(type)) {
+    if (!Object.values(this.msettings.userType).includes(type)) {
       throw new Error("Invalid user type");
     }
     let error = false;
@@ -61,12 +49,12 @@ class MitiAccount {
       throw new Error("User Info Already Existing");
     }
     //TODO Check user ID with mitiAuth
-    const rows = Object.keys(this.tableRows).join(", ");
-    const values = Object.keys(this.tableRows)
+    const rows = Object.keys(this.msettings.tableRows).join(", ");
+    const values = Object.keys(this.msettings.tableRows)
       .map(() => `?`)
       .join(", ");
     const params = [id].concat(
-      Object.keys(this.tableRows).map((key) => userObject[key])
+      Object.keys(this.msettings.tableRows).map((key) => userObject[key])
     );
 
     const createSQL = `INSERT INTO ${type}${this.table} (id,${rows}) VALUES (?, ${values})`;
@@ -77,11 +65,11 @@ class MitiAccount {
   }
 
   readRow() {
-    return Object.keys(this.tableRows);
+    return Object.keys(this.msettings.tableRows);
   }
 
   async read(id, type) {
-    if (!Object.values(this.userType).includes(type)) {
+    if (!Object.values(this.msettings.userType).includes(type)) {
       throw new Error("Invalid user type");
     }
     //TODO Check user ID with mitiAuth
@@ -97,15 +85,15 @@ class MitiAccount {
     if (!this.validateUserObject(userObject)) {
       throw new Error("Invalid User Informations");
     }
-    if (!Object.values(this.userType).includes(type)) {
+    if (!Object.values(this.msettings.userType).includes(type)) {
       throw new Error("Invalid user type");
     }
     await this.read(id, type);
     //TODO Check user ID with mitiAuth
     let updateMagic = "";
     let params = [];
-    for (const key in this.tableRows) {
-      if (this.tableRows.hasOwnProperty(key)) {
+    for (const key in this.msettings.tableRows) {
+      if (this.msettings.tableRows.hasOwnProperty(key)) {
         updateMagic += `${key} = ?, `;
         params.push(userObject[key]);
       }
@@ -120,7 +108,7 @@ class MitiAccount {
   async delete(id, type) {
     await this.read(id, type);
     const params = [id];
-    if (!Object.values(this.userType).includes(type)) {
+    if (!Object.values(this.msettings.userType).includes(type)) {
       throw new Error("Invalid user type");
     }
     const updateSQL = `DELETE FROM ${type}${this.table} WHERE id = ? ;`;
@@ -128,7 +116,7 @@ class MitiAccount {
   }
 
   validateUserObject(userObject) {
-    const keys = Object.keys(this.tableRows);
+    const keys = Object.keys(this.msettings.tableRows);
     for (const key of keys) {
       if (!(key in userObject)) {
         return false;
@@ -140,7 +128,7 @@ class MitiAccount {
     return true;
   }
   convertType(key) {
-    if (this.tableRows[key] === "VARCHAR(80)") {
+    if (this.msettings.tableRows[key] === "VARCHAR(80)") {
       return "string";
     }
   }

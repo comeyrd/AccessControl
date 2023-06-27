@@ -2,6 +2,7 @@ import mysql from "mysql2/promise";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import MitiAccount from "./mitiAccount";
 const TEST_DB_NAME = `test_db_${Math.floor(Math.random() * 1000000)}`;
+import MitiSettings from "../MitiSettings/mitiSettings";
 
 const mysqlConfigFirst = {
   host: "127.0.0.1",
@@ -38,7 +39,10 @@ describe("MitiAccount", () => {
       con = await mysql.createConnection(mysqlConfigFirst);
       await con.query(`CREATE DATABASE ${TEST_DB_NAME}`);
       mysqlPool = await mysql.createPool(mysqlConfig);
-      account = new MitiAccount(mysqlPool, UserType, TableRows);
+      account = new MitiAccount(
+        mysqlPool,
+        new MitiSettings(UserType, TableRows)
+      );
       await account.init();
     } catch (e) {
       console.log(e);

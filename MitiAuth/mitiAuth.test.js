@@ -1,5 +1,6 @@
 import mysql from "mysql2/promise";
 import MitiAuth from "./mitiAuth";
+import MitiSettings from "../MitiSettings/mitiSettings";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 const TEST_DB_NAME = `test_db_${Math.floor(Math.random() * 1000000)}`;
 
@@ -32,7 +33,7 @@ describe("MitiAuth", () => {
       con = await mysql.createConnection(mysqlConfigFirst);
       await con.query(`CREATE DATABASE ${TEST_DB_NAME}`);
       mysqlPool = await mysql.createPool(mysqlConfig);
-      auth = new MitiAuth(mysqlPool, userTypes);
+      auth = new MitiAuth(mysqlPool, new MitiSettings(userTypes));
       await auth.init();
     } catch (e) {
       console.log(e);
