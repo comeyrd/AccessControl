@@ -13,7 +13,7 @@ class MitiAccount {
     return rows;
   }
 
-  async init() {
+  async setupDatabase() {
     const promises = [];
     let query = "";
     for (const key in this.msettings.tableRows) {
@@ -32,6 +32,7 @@ class MitiAccount {
     }
     return Promise.all(promises);
   }
+
   async create(userObject, id, type) {
     if (!this.validateUserObject(userObject)) {
       throw new Error("Invalid User Informations");
@@ -49,6 +50,10 @@ class MitiAccount {
       throw new Error("User Info Already Existing");
     }
     //TODO Check user ID with mitiAuth
+    //To achieve that, i need to build some doc that explains in what order you need to do what
+    //For exemple here we say that for an Account to be created, it needs to be and Auth.
+    //So i need to build a function that tests if the user exists or not and use it everywhere we use the account,
+    //That means we can use Auth alone but not account alone and it is fine like that.
     const rows = Object.keys(this.msettings.tableRows).join(", ");
     const values = Object.keys(this.msettings.tableRows)
       .map(() => `?`)

@@ -43,7 +43,7 @@ describe("MitiAccount", () => {
         mysqlPool,
         new MitiSettings(UserType, TableRows)
       );
-      await account.init();
+      await account.setupDatabase();
     } catch (e) {
       console.log(e);
     }

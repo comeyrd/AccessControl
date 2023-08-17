@@ -19,12 +19,11 @@ class MitiAuth {
 
   async #query(str, params) {
     const sql = this.mysqlPool.format(str, params);
-    // console.log(sql); //TODO remove
     const [rows] = await this.mysqlPool.query(sql);
     return rows;
   }
 
-  async init() {
+  async setupDatabase() {
     const promises = [];
     for (const key in this.msettings.userType) {
       const value = this.msettings.userType[key];

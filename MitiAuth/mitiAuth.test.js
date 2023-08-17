@@ -34,7 +34,7 @@ describe("MitiAuth", () => {
       await con.query(`CREATE DATABASE ${TEST_DB_NAME}`);
       mysqlPool = await mysql.createPool(mysqlConfig);
       auth = new MitiAuth(mysqlPool, new MitiSettings(userTypes));
-      await auth.init();
+      await auth.setupDatabase();
     } catch (e) {
       console.log(e);
     }
