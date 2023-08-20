@@ -1,6 +1,6 @@
 import mysql from "mysql2/promise";
-import MitiAuth from "./mitiAuth";
 import MitiSettings from "../MitiSettings/mitiSettings";
+import MitiAuth from "./mitiAuth";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 const TEST_DB_NAME = `test_db_${Math.floor(Math.random() * 1000000)}`;
 

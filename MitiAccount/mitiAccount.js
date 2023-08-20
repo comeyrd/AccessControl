@@ -1,9 +1,11 @@
 import MitiSettings from "../MitiSettings/mitiSettings";
+import MitiAuth from "../MitiAuth/mitiAuth";
 class MitiAccount {
   table = "_uinfo";
-  constructor(mysqlPool, mitiSettings = new MitiSettings()) {
+  constructor(mysqlPool, mitiSettings = new MitiSettings(), auth) {
     this.mysqlPool = mysqlPool;
     this.msettings = mitiSettings;
+    this.mitiAuth = auth;
   }
 
   async #query(str, params) {
@@ -33,32 +35,33 @@ class MitiAccount {
     return Promise.all(promises);
   }
 
-  async create(userObject, id, type) {
+  async create(userObject, authToken) {
     if (!this.validateUserObject(userObject)) {
       throw new Error("Invalid User Informations");
     }
+
+    const decoded = await this.mitiAuth.checkJWT(authToken).catch((error) => {
+      throw new Error("Invalid User Token" + error);
+    });
+    const id = decoded.userId;
+    const type = decoded.type;
     if (!Object.values(this.msettings.userType).includes(type)) {
       throw new Error("Invalid user type");
     }
     let error = false;
     try {
-      await this.read(id, type);
+      await this.read(authToken);
     } catch (e) {
       error = true;
     }
     if (!error) {
-      throw new Error("User Info Already Existing");
+      throw new Error("User 'Account already existing");
     }
-    //TODO Check user ID with mitiAuth
-    //To achieve that, i need to build some doc that explains in what order you need to do what
-    //For exemple here we say that for an Account to be created, it needs to be and Auth.
-    //So i need to build a function that tests if the user exists or not and use it everywhere we use the account,
-    //That means we can use Auth alone but not account alone and it is fine like that.
     const rows = Object.keys(this.msettings.tableRows).join(", ");
     const values = Object.keys(this.msettings.tableRows)
       .map(() => `?`)
       .join(", ");
-    const params = [id].concat(
+    const params = [decoded.userId].concat(
       Object.keys(this.msettings.tableRows).map((key) => userObject[key])
     );
 
@@ -73,11 +76,15 @@ class MitiAccount {
     return Object.keys(this.msettings.tableRows);
   }
 
-  async read(id, type) {
+  async read(authToken) {
+    const decoded = await this.mitiAuth.checkJWT(authToken).catch((error) => {
+      throw new Error("Invalid User Token");
+    });
+    const id = decoded.userId;
+    const type = decoded.type;
     if (!Object.values(this.msettings.userType).includes(type)) {
       throw new Error("Invalid user type");
     }
-    //TODO Check user ID with mitiAuth
     const selectSQL = `SELECT * FROM ${type}${this.table} WHERE id = ?`;
     const params = [id];
     const selectQuery = await this.#query(selectSQL, params);
@@ -86,15 +93,20 @@ class MitiAccount {
     }
     return selectQuery[0];
   }
-  async update(userObject, id, type) {
+  async update(userObject, authToken) {
     if (!this.validateUserObject(userObject)) {
       throw new Error("Invalid User Informations");
     }
+
+    const decoded = await this.mitiAuth.checkJWT(authToken).catch((error) => {
+      throw new Error("Invalid User Token");
+    });
+    const id = decoded.userId;
+    const type = decoded.type;
     if (!Object.values(this.msettings.userType).includes(type)) {
       throw new Error("Invalid user type");
     }
-    await this.read(id, type);
-    //TODO Check user ID with mitiAuth
+    await this.read(authToken);
     let updateMagic = "";
     let params = [];
     for (const key in this.msettings.tableRows) {
@@ -110,8 +122,13 @@ class MitiAccount {
     await this.#query(updateSQL, params);
   }
 
-  async delete(id, type) {
-    await this.read(id, type);
+  async delete(authToken) {
+    const decoded = await this.mitiAuth.checkJWT(authToken).catch((error) => {
+      throw new Error("Invalid User Token");
+    });
+    const id = decoded.userId;
+    const type = decoded.type;
+    await this.read(authToken);
     const params = [id];
     if (!Object.values(this.msettings.userType).includes(type)) {
       throw new Error("Invalid user type");
