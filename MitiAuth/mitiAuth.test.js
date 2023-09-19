@@ -76,7 +76,7 @@ describe("MitiAuth", () => {
         await auth.register(username, password, userTypes[UserKeyType]);
         await expect(
           auth.login(username, wrongPassword, userTypes[UserKeyType])
-        ).rejects.toThrow("Password does not match");
+        ).rejects.toThrow(auth.BAD_PASSWORD);
       });
 
       it("should throw an error when logging in with a non-existent user", async () => {
@@ -84,7 +84,7 @@ describe("MitiAuth", () => {
         const password = "noexistp";
         await expect(
           auth.login(username, password, userTypes[UserKeyType])
-        ).rejects.toThrow("User not found");
+        ).rejects.toThrow(auth.USER_DONT_EXISTS);
       });
 
       it("should throw an error when bad params", async () => {
@@ -94,10 +94,10 @@ describe("MitiAuth", () => {
         let badPass;
         await expect(
           auth.login(badUs, goodPass, userTypes[UserKeyType])
-        ).rejects.toThrow("Bad Params");
+        ).rejects.toThrow(auth.BAD_PARAMS);
         await expect(
           auth.login(goodUs, badPass, userTypes[UserKeyType])
-        ).rejects.toThrow("Bad Params");
+        ).rejects.toThrow(this.BAD_PARAMS);
       });
 
       it("update", async () => {
@@ -147,7 +147,7 @@ describe("MitiAuth", () => {
         await auth.delete(token);
         await expect(
           auth.login(username, password, userTypes[UserKeyType])
-        ).rejects.toThrow("User not found");
+        ).rejects.toThrow(this.USER_DONT_EXISTS);
       });
 
       it("testAlreadyExistinguser", async () => {
@@ -161,7 +161,36 @@ describe("MitiAuth", () => {
         expect(typeof id).toBe("string");
         await expect(
           auth.register(username, password, userTypes[UserKeyType])
-        ).rejects.toThrow("User Already Exists");
+        ).rejects.toThrow(this.USER_EXISTS);
+      });
+      it("badTokenTest", async () => {
+        const badtoken = "test";
+        await expect(auth.checkJWT(badtoken)).rejects.toThrow(
+          auth.INVALID_TOKEN_ERROR
+        );
+      });
+      it("logout", async () => {
+        const username = "testuser2";
+        const password = "testpass2";
+        const id = await auth.register(
+          username,
+          password,
+          userTypes[UserKeyType]
+        );
+        expect(typeof id).toBe("string");
+        const token = await auth.login(
+          username,
+          password,
+          userTypes[UserKeyType]
+        );
+        expect(typeof token).toBe("string");
+        const decoded = await auth.checkJWT(token);
+        expect(decoded.type).toBe(userTypes[UserKeyType]);
+        const newtoken = await auth.logout(token);
+        expect(auth.checkJWT(newtoken)).rejects.toThrow(
+          auth.EXPIRED_TOKEN_ERROR
+        );
+        await auth.delete(token);
       });
     }
     //test where userType Matter
@@ -171,7 +200,7 @@ describe("MitiAuth", () => {
       const invalidType = "invalid";
       await expect(
         auth.register(username, password, invalidType)
-      ).rejects.toThrow("Invalid user type");
+      ).rejects.toThrow(auth.INVALID_USER_TYPE);
     });
   });
 });

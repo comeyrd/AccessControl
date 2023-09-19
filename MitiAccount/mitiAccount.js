@@ -7,10 +7,14 @@ class MitiAccount {
     this.msettings = mitiSettings;
     this.mitiAuth = auth;
   }
+  INVALID_USER_TYPE = new Error("Invalid User Type");
+  INVALID_USER_INFO = new Error("Invalid User Informations");
+  ACCOUNT_EXISTS = new Error("User Account' Already Exists");
+  ACCOUNT_CREATION = new Error("User Info Creation Error");
+  NO_USER_INFO = new Error("No Account' for this Auth'");
 
   async #query(str, params) {
     const sql = this.mysqlPool.format(str, params);
-    // console.log(sql); //TODO remove
     const [rows] = await this.mysqlPool.query(sql);
     return rows;
   }
@@ -36,18 +40,10 @@ class MitiAccount {
   }
 
   async create(userObject, authToken) {
-    if (!this.validateUserObject(userObject)) {
-      throw new Error("Invalid User Informations");
-    }
-
-    const decoded = await this.mitiAuth.checkJWT(authToken).catch((error) => {
-      throw new Error("Invalid User Token" + error);
-    });
-    const id = decoded.userId;
+    this.validateUserObject(userObject);
+    const decoded = await this.mitiAuth.checkJWT(authToken);
     const type = decoded.type;
-    if (!Object.values(this.msettings.userType).includes(type)) {
-      throw new Error("Invalid user type");
-    }
+    this.checkType(type);
     let error = false;
     try {
       await this.read(authToken);
@@ -55,7 +51,7 @@ class MitiAccount {
       error = true;
     }
     if (!error) {
-      throw new Error("User 'Account already existing");
+      throw this.ACCOUNT_EXISTS;
     }
     const rows = Object.keys(this.msettings.tableRows).join(", ");
     const values = Object.keys(this.msettings.tableRows)
@@ -68,7 +64,7 @@ class MitiAccount {
     const createSQL = `INSERT INTO ${type}${this.table} (id,${rows}) VALUES (?, ${values})`;
     const createQuery = await this.#query(createSQL, params);
     if (createQuery["affectedRows"] !== 1) {
-      throw new Error("Didn't create user info");
+      throw this.ACCOUNT_CREATION;
     }
   }
 
@@ -77,35 +73,24 @@ class MitiAccount {
   }
 
   async read(authToken) {
-    const decoded = await this.mitiAuth.checkJWT(authToken).catch((error) => {
-      throw new Error("Invalid User Token");
-    });
+    const decoded = await this.mitiAuth.checkJWT(authToken);
     const id = decoded.userId;
     const type = decoded.type;
-    if (!Object.values(this.msettings.userType).includes(type)) {
-      throw new Error("Invalid user type");
-    }
+    this.checkType(type);
     const selectSQL = `SELECT * FROM ${type}${this.table} WHERE id = ?`;
     const params = [id];
     const selectQuery = await this.#query(selectSQL, params);
     if (selectQuery.length === 0) {
-      throw new Error("No userinfo at this id");
+      throw this.NO_USER_INFO;
     }
     return selectQuery[0];
   }
   async update(userObject, authToken) {
-    if (!this.validateUserObject(userObject)) {
-      throw new Error("Invalid User Informations");
-    }
-
-    const decoded = await this.mitiAuth.checkJWT(authToken).catch((error) => {
-      throw new Error("Invalid User Token");
-    });
+    this.validateUserObject(userObject);
+    const decoded = await this.mitiAuth.checkJWT(authToken);
     const id = decoded.userId;
     const type = decoded.type;
-    if (!Object.values(this.msettings.userType).includes(type)) {
-      throw new Error("Invalid user type");
-    }
+    this.checkType(type);
     await this.read(authToken);
     let updateMagic = "";
     let params = [];
@@ -123,16 +108,12 @@ class MitiAccount {
   }
 
   async delete(authToken) {
-    const decoded = await this.mitiAuth.checkJWT(authToken).catch((error) => {
-      throw new Error("Invalid User Token");
-    });
+    const decoded = await this.mitiAuth.checkJWT(authToken);
     const id = decoded.userId;
     const type = decoded.type;
     await this.read(authToken);
     const params = [id];
-    if (!Object.values(this.msettings.userType).includes(type)) {
-      throw new Error("Invalid user type");
-    }
+    this.checkType(type);
     const updateSQL = `DELETE FROM ${type}${this.table} WHERE id = ? ;`;
     await this.#query(updateSQL, params);
   }
@@ -141,17 +122,22 @@ class MitiAccount {
     const keys = Object.keys(this.msettings.tableRows);
     for (const key of keys) {
       if (!(key in userObject)) {
-        return false;
+        throw this.INVALID_USER_INFO;
       }
       if (typeof userObject[key] !== this.convertType(key)) {
-        return false;
+        throw this.INVALID_USER_INFO;
       }
     }
-    return true;
   }
+
   convertType(key) {
     if (this.msettings.tableRows[key] === "VARCHAR(80)") {
       return "string";
+    }
+  }
+  checkType(type) {
+    if (!Object.values(this.msettings.userType).includes(type)) {
+      throw this.INVALID_USER_TYPE;
     }
   }
 }

@@ -131,7 +131,7 @@ describe("MitiAccount", () => {
           UserType[UserKeyType]
         );
         await expect(account.update(randomValues, token)).rejects.toThrow(
-          "No userinfo at this id"
+          account.NO_USER_INFO
         );
         await auth.delete(token);
       });
@@ -147,9 +147,7 @@ describe("MitiAccount", () => {
         );
         await account.create(randomValues, token);
         await account.delete(token);
-        await expect(account.read(token)).rejects.toThrow(
-          "No userinfo at this id"
-        );
+        await expect(account.read(token)).rejects.toThrow(account.NO_USER_INFO);
         await auth.delete(token);
       });
       it("Delete not existing userinfo", async () => {
@@ -159,7 +157,7 @@ describe("MitiAccount", () => {
           UserType[UserKeyType]
         );
         await expect(account.delete(token)).rejects.toThrow(
-          "No userinfo at this id"
+          account.NO_USER_INFO
         );
         await auth.delete(token);
       });
@@ -173,12 +171,28 @@ describe("MitiAccount", () => {
         for (const key of account.readRow()) {
           randomValues[key] = Math.random().toString(36).substring(2, 15);
         }
-        const id = "12";
         await account.create(randomValues, token);
         await expect(account.create(randomValues, token)).rejects.toThrow(
-          "User 'Account already existing"
+          this.ACCOUNT_EXISTS
         );
         await account.delete(token);
+        await auth.delete(token);
+      });
+      it("Create bad userinfo", async () => {
+        let randomValues = {};
+        let aaa = account.readRow();
+        for (let i = 0; i < 3; i++) {
+          randomValues[aaa[i]] = Math.random().toString(36).substring(2, 15);
+        }
+        const token = await th.createNlogin(
+          "username",
+          "password",
+          UserType[UserKeyType]
+        );
+        await auth.checkJWT(token);
+        expect(account.create(randomValues, token)).rejects.toThrow(
+          "Invalid User Informations"
+        );
         await auth.delete(token);
       });
     }

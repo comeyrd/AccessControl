@@ -11,6 +11,13 @@ class MitiAuth {
   table = "_users";
   jwtExpiration = "3d";
   jwtSecret = v4();
+  EXPIRED_TOKEN_ERROR = new Error("Expired Token");
+  INVALID_TOKEN_ERROR = new Error("Invalid Token");
+  INVALID_USER_TYPE = new Error("Invalid User Type");
+  USER_EXISTS = new Error("User already Exists");
+  USER_DONT_EXISTS = new Error("User doesnt exist");
+  BAD_PASSWORD = new Error("Password and Login does not match");
+  BAD_PARAMS = new Error("Bad Params");
 
   constructor(mysqlPool, mitiSettings = new MitiSettings()) {
     this.mysqlPool = mysqlPool;
@@ -41,17 +48,13 @@ class MitiAuth {
   }
 
   async register(username, password, type) {
-    if (!Object.values(this.msettings.userType).includes(type)) {
-      throw new Error("Invalid user type");
-    }
-    if (typeof username !== "string" || typeof password !== "string") {
-      throw new Error("Bad Params");
-    }
+    this.checkUserType(type);
+    this.checkParams(username, password);
     //verifier si l'user existe
     const selectQuery = `SELECT id FROM ${type}${this.table} WHERE username = ?`;
     const rows = await this.#query(selectQuery, [username]);
     if (rows.length != 0) {
-      throw new Error("User Already Exists");
+      throw this.USER_EXISTS;
     }
     const uuidv4 = v4();
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -62,16 +65,12 @@ class MitiAuth {
   }
 
   async login(username, password, type) {
-    if (!Object.values(this.msettings.userType).includes(type)) {
-      throw new Error("Invalid user type");
-    }
-    if (typeof username !== "string" || typeof password !== "string") {
-      throw new Error("Bad Params");
-    }
+    this.checkUserType(type);
+    this.checkParams(username, password);
     const query = `SELECT id, password FROM ${type}${this.table} WHERE username = ?`;
     const rows = await this.#query(query, [username]);
     if (rows.length === 0) {
-      throw new Error("User not found");
+      throw this.USER_DONT_EXISTS;
     }
     const userId = rows[0].id;
     const hashedPassword = rows[0].password;
@@ -81,16 +80,12 @@ class MitiAuth {
         expiresIn: this.jwtExpiration,
       });
     }
-    throw new Error("Password does not match");
+    throw this.BAD_PASSWORD;
   }
 
   async update(token, newusername, newpassword) {
-    if (typeof newusername !== "string" || typeof newpassword !== "string") {
-      throw new Error("Bad Params");
-    }
-    const decoded = await this.checkJWT(token).catch((error) => {
-      throw error;
-    });
+    this.checkParams(newusername, newpassword);
+    const decoded = await this.checkJWT(token);
     const hashedPassword = await bcrypt.hash(newpassword, 10);
     const query = `UPDATE ${decoded.type}${this.table} SET username= ?, password= ? WHERE id = ? ;`;
     const params = [newusername, hashedPassword, decoded.userId];
@@ -99,9 +94,7 @@ class MitiAuth {
   }
 
   async delete(token) {
-    const decoded = await this.checkJWT(token).catch((error) => {
-      throw error;
-    });
+    const decoded = await this.checkJWT(token);
     const query = `DELETE FROM ${decoded.type}${this.table} WHERE id = ?`;
     const params = [decoded.userId];
     await this.#query(query, params);
@@ -111,12 +104,38 @@ class MitiAuth {
     return new Promise((resolve, reject) => {
       jwt.verify(token, this.jwtSecret, (err, decoded) => {
         if (err) {
-          reject(err);
+          reject(this.processJWTError(err));
         } else {
           resolve(decoded);
         }
       });
     });
+  }
+
+  async logout(token) {
+    const decoded = await this.checkJWT(token);
+    const userIdD = decoded.userId;
+    const typeD = decoded.type;
+    return jwt.sign({ userIdD, typeD }, this.jwtSecret, {
+      expiresIn: -1, //1 equals expires in 1ms.
+    });
+  }
+  processJWTError(error) {
+    if (error.name == "TokenExpiredError") {
+      return this.EXPIRED_TOKEN_ERROR;
+    } else {
+      return this.INVALID_TOKEN_ERROR;
+    }
+  }
+  checkUserType(type) {
+    if (!Object.values(this.msettings.userType).includes(type)) {
+      throw this.INVALID_USER_TYPE;
+    }
+  }
+  checkParams(user, pass) {
+    if (typeof user !== "string" || typeof pass !== "string") {
+      throw this.BAD_PARAMS;
+    }
   }
 }
 
