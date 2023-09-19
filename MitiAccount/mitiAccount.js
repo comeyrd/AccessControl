@@ -1,8 +1,7 @@
 import MitiSettings from "../MitiSettings/mitiSettings";
-import MitiAuth from "../MitiAuth/mitiAuth";
 class MitiAccount {
   table = "_uinfo";
-  constructor(mysqlPool, mitiSettings = new MitiSettings(), auth) {
+  constructor(mysqlPool, auth, mitiSettings = new MitiSettings()) {
     this.mysqlPool = mysqlPool;
     this.msettings = mitiSettings;
     this.mitiAuth = auth;

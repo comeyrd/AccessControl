@@ -47,11 +47,11 @@ describe("MitiAccount", () => {
       await auth.setupDatabase();
       account = new MitiAccount(
         mysqlPool,
-        new MitiSettings(UserType, TableRows),
-        auth
+        auth,
+        new MitiSettings(UserType, TableRows)
       );
       await account.setupDatabase();
-      th = new acTestHelper(auth);
+      th = new AcTestHelper(auth);
     } catch (e) {
       console.log(e);
     }
@@ -198,12 +198,12 @@ describe("MitiAccount", () => {
     }
   });
 });
-class acTestHelper {
+class AcTestHelper {
   constructor(authen) {
     this.auth = authen;
   }
   async createNlogin(username, password, type) {
-    const id = await this.auth.register(username, password, type);
+    await this.auth.register(username, password, type);
     const token = await this.auth.login(username, password, type);
     return token;
   }
