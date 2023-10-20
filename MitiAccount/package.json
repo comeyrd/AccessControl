@@ -1,0 +1,12 @@
+{
+    "type": "module",
+    "name": "miti-account",
+    "version": "1.0.0",
+    "main": "mitiAccount.mjs",
+    "scripts": {
+        "test": "vitest"
+      },
+      "dependencies": {
+        "miti-settings": "file:./../MitiSettings"
+      }
+}

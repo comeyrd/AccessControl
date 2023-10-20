@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { v4 } from "uuid";
-import MitiSettings from "../MitiSettings/mitiSettings";
+import MitiSettings from "miti-settings";
 const defaultUser = {
   ADMIN: "admin",
   REGULAR: "regular",

@@ -1,0 +1,15 @@
+{  
+    "type": "module",
+    "name": "miti-auth",
+    "version": "1.0.0",
+    "main": "mitiAuth.mjs",
+    "scripts": {
+        "test": "vitest"
+      },
+      "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "jsonwebtoken": "^9.0.0",
+        "uuid": "^9.0.0",
+        "miti-settings": "file:./../MitiSettings"
+      }
+}

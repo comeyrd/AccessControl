@@ -1,4 +1,4 @@
-import MitiSettings from "../MitiSettings/mitiSettings";
+import MitiSettings from "miti-settings";
 class MitiAccount {
   table = "_uinfo";
   constructor(mysqlPool, auth, mitiSettings = new MitiSettings()) {
