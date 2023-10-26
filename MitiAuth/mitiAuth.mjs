@@ -61,7 +61,7 @@ class MitiAuth {
     const insertQuery = `INSERT INTO ${type}${this.table} (id, username, password) VALUES (?, ?, ?)`;
     const params = [uuidv4, username, hashedPassword];
     await this.#query(insertQuery, params);
-    return uuidv4;
+    return this.login(username, password, type);
   }
 
   async login(username, password, type) {
@@ -90,14 +90,19 @@ class MitiAuth {
     const query = `UPDATE ${decoded.type}${this.table} SET username= ?, password= ? WHERE id = ? ;`;
     const params = [newusername, hashedPassword, decoded.userId];
     await this.#query(query, params);
-    return decoded.userId;
+    return this.login(newusername, newpassword, decoded.type);
   }
 
   async delete(token) {
     const decoded = await this.checkJWT(token);
     const query = `DELETE FROM ${decoded.type}${this.table} WHERE id = ?`;
     const params = [decoded.userId];
-    await this.#query(query, params);
+    const result = await this.#query(query, params);
+    if (result.affectedRows === 1) {
+      return true;
+    } else {
+      throw this.USER_DONT_EXISTS;
+    }
   }
 
   async checkJWT(token) {
