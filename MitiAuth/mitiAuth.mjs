@@ -9,7 +9,7 @@ const defaultUser = {
 
 class MitiAuth {
   table = "_users";
-  jwtExpiration = "3d";
+  jwtExpiration = 3 * 24 * 60 * 60 * 1000; //3Days
   jwtSecret = v4();
   EXPIRED_TOKEN_ERROR = new Error("Expired Token");
   INVALID_TOKEN_ERROR = new Error("Invalid Token");
