@@ -76,7 +76,8 @@ class MitiAccount {
     const id = decoded.userId;
     const type = decoded.type;
     this.checkType(type);
-    const selectSQL = `SELECT * FROM ${type}${this.table} WHERE id = ?`;
+    const columnNames = Object.keys(this.msettings.tableRows).join(", ");
+    const selectSQL = `SELECT ${columnNames} FROM ${type}${this.table} WHERE id = ?`;
     const params = [id];
     const selectQuery = await this.#query(selectSQL, params);
     if (selectQuery.length === 0) {

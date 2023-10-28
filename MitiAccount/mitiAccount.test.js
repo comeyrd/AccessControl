@@ -78,7 +78,6 @@ describe("MitiAccount", () => {
         const decoded = await auth.checkJWT(token);
         await account.create(randomValues, token);
         const result = await account.read(token, UserType[UserKeyType]);
-        randomValues["id"] = decoded.userId;
         let error = 0;
         for (const key in randomValues) {
           if (randomValues[key] !== result[key]) {
