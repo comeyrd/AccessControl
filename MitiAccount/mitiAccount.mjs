@@ -6,6 +6,12 @@ class MitiAccount {
     this.msettings = mitiSettings;
     this.mitiAuth = auth;
   }
+
+  typeTranslation = {
+    "VARCHAR(80)": "string",
+    // Add more type translations as needed
+  };
+
   INVALID_USER_TYPE = new Error("Invalid User Type");
   INVALID_USER_INFO = new Error("Invalid User Informations");
   ACCOUNT_EXISTS = new Error("User Account' Already Exists");
@@ -134,14 +140,22 @@ class MitiAccount {
   }
 
   convertType(key) {
-    if (this.msettings.tableRows[key] === "VARCHAR(80)") {
-      return "string";
-    }
+    return this.typeTranslation[this.msettings.tableRows[key]];
   }
   checkType(type) {
     if (!Object.values(this.msettings.userType).includes(type)) {
       throw this.INVALID_USER_TYPE;
     }
+  }
+  getScheme() {
+    const transformedObject = {};
+    for (const key in this.msettings.tableRows) {
+      const inputType = this.msettings.tableRows[key];
+      if (this.typeTranslation[inputType]) {
+        transformedObject[key] = this.typeTranslation[inputType];
+      }
+    }
+    return transformedObject;
   }
 }
 

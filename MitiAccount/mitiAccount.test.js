@@ -197,6 +197,9 @@ describe("MitiAccount", () => {
         );
         await auth.delete(token);
       });
+      it("Check the scheme", async () => {
+        console.log(account.getScheme());
+      });
     }
   });
 });
