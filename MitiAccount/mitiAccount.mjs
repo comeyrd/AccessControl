@@ -155,6 +155,7 @@ class MitiAccount {
         transformedObject[key] = this.typeTranslation[inputType];
       }
     }
+    transformedObject["username"] = "string";
     return transformedObject;
   }
 }
