@@ -147,17 +147,6 @@ class MitiAccount {
       throw this.INVALID_USER_TYPE;
     }
   }
-  getScheme() {
-    const transformedObject = {};
-    for (const key in this.msettings.tableRows) {
-      const inputType = this.msettings.tableRows[key];
-      if (this.typeTranslation[inputType]) {
-        transformedObject[key] = this.typeTranslation[inputType];
-      }
-    }
-    transformedObject["username"] = "string";
-    return transformedObject;
-  }
 }
 
 export default MitiAccount;
