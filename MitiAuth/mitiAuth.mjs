@@ -93,6 +93,17 @@ class MitiAuth {
     return true;
   }
 
+  async getUsername(token) {
+    const decoded = await this.checkJWT(token);
+    const query = `SELECT username FROM  ${decoded.type}${this.table} WHERE id = ? ;`;
+    const params = [decoded.userId];
+    const selectQuery = await this.#query(query, params);
+    if (selectQuery.length === 0) {
+      throw this.NO_USER_INFO;
+    }
+    return selectQuery[0]["username"];
+  }
+
   async delete(token) {
     const decoded = await this.checkJWT(token);
     const query = `DELETE FROM ${decoded.type}${this.table} WHERE id = ?`;

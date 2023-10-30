@@ -84,6 +84,9 @@ describe("MitiAccount", () => {
             error = error + 1;
           }
         }
+        if (result["username"] !== "username") {
+          error = error + 1;
+        }
         if (error !== 0) {
           throw new Error("Error in userinfoCreation");
         }

@@ -192,6 +192,24 @@ describe("MitiAuth", () => {
         );
         await auth.delete(token);
       });
+      it("reading username", async () => {
+        const username = "baduser";
+        const password = "badpass";
+
+        const id = await auth.register(
+          username,
+          password,
+          userTypes[UserKeyType]
+        );
+        expect(typeof id).toBe("string");
+        const token = await auth.login(
+          username,
+          password,
+          userTypes[UserKeyType]
+        );
+        const recUsername = await auth.getUsername(token);
+        expect(recUsername).toBe(username);
+      });
     }
     //test where userType Matter
     it("should throw an error when registering with an invalid user type", async () => {

@@ -73,6 +73,7 @@ class MitiAccount {
 
   async read(authToken) {
     const decoded = await this.mitiAuth.checkJWT(authToken);
+    const username = await this.mitiAuth.getUsername(authToken);
     const id = decoded.userId;
     const type = decoded.type;
     this.checkType(type);
@@ -83,7 +84,9 @@ class MitiAccount {
     if (selectQuery.length === 0) {
       throw this.NO_USER_INFO;
     }
-    return selectQuery[0];
+    var object = selectQuery[0];
+    object["username"] = username;
+    return object;
   }
   async update(userObject, authToken) {
     this.validateUserObject(userObject);
