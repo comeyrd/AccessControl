@@ -11,12 +11,6 @@ const mysqlConfigFirst = {
   database: "",
 };
 
-const userTypes = {
-  ADMIN: "admin",
-  REGULAR: "regular",
-  PROTECTED: "protected",
-};
-
 const mysqlConfig = {
   host: "localhost",
   user: "toto",
@@ -26,6 +20,8 @@ const mysqlConfig = {
 
 let mysqlPool;
 let con;
+const mitisett = new MitiSettings();
+
 describe("MitiAuth", () => {
   let auth;
   beforeAll(async () => {
@@ -33,7 +29,8 @@ describe("MitiAuth", () => {
       con = await mysql.createConnection(mysqlConfigFirst);
       await con.query(`CREATE DATABASE ${TEST_DB_NAME}`);
       mysqlPool = await mysql.createPool(mysqlConfig);
-      auth = new MitiAuth(mysqlPool, new MitiSettings(userTypes));
+      console.log(mitisett);
+      auth = new MitiAuth(mysqlPool, mitisett);
       await auth.setupDatabase();
     } catch (e) {
       console.log(e);
@@ -48,24 +45,17 @@ describe("MitiAuth", () => {
   //TODO concurrent
   describe("register and login", () => {
     //test where userType doesnt Matter
-    for (const UserKeyType in userTypes) {
+    const users = mitisett.getUserTypes();
+    for (const user in users) {
       it("should register and login a user", async () => {
         const username = "testuser";
         const password = "testpass";
-        const id = await auth.register(
-          username,
-          password,
-          userTypes[UserKeyType]
-        );
+        const id = await auth.register(username, password, users[user]);
         expect(typeof id).toBe("string");
-        const token = await auth.login(
-          username,
-          password,
-          userTypes[UserKeyType]
-        );
+        const token = await auth.login(username, password, users[user]);
         expect(typeof token).toBe("string");
         const decoded = await auth.checkJWT(token);
-        expect(decoded.type).toBe(userTypes[UserKeyType]);
+        expect(decoded.type).toBe(users[user]);
         await auth.delete(token);
       });
 
@@ -73,9 +63,9 @@ describe("MitiAuth", () => {
         const username = "baduserwrong";
         const password = "password";
         const wrongPassword = "wrongpass";
-        await auth.register(username, password, userTypes[UserKeyType]);
+        await auth.register(username, password, users[user]);
         await expect(
-          auth.login(username, wrongPassword, userTypes[UserKeyType])
+          auth.login(username, wrongPassword, users[user])
         ).rejects.toThrow(auth.BAD_PASSWORD);
       });
 
@@ -83,7 +73,7 @@ describe("MitiAuth", () => {
         const username = "noexistuser";
         const password = "noexistp";
         await expect(
-          auth.login(username, password, userTypes[UserKeyType])
+          auth.login(username, password, users[user])
         ).rejects.toThrow(auth.USER_DONT_EXISTS);
       });
 
@@ -92,75 +82,51 @@ describe("MitiAuth", () => {
         const goodPass = "pass";
         let badUs;
         let badPass;
-        await expect(
-          auth.login(badUs, goodPass, userTypes[UserKeyType])
-        ).rejects.toThrow(auth.BAD_PARAMS);
-        await expect(
-          auth.login(goodUs, badPass, userTypes[UserKeyType])
-        ).rejects.toThrow(this.BAD_PARAMS);
+        await expect(auth.login(badUs, goodPass, users[user])).rejects.toThrow(
+          auth.BAD_PARAMS
+        );
+        await expect(auth.login(goodUs, badPass, users[user])).rejects.toThrow(
+          this.BAD_PARAMS
+        );
       });
 
       it("update", async () => {
         const username = "testuser";
         const password = "testpass";
-        const id = await auth.register(
-          username,
-          password,
-          userTypes[UserKeyType]
-        );
+        const id = await auth.register(username, password, users[user]);
         expect(typeof id).toBe("string");
-        const token = await auth.login(
-          username,
-          password,
-          userTypes[UserKeyType]
-        );
+        const token = await auth.login(username, password, users[user]);
         expect(typeof token).toBe("string");
         const newUser = "test2";
         const newPass = "test3";
         await auth.update(token, newUser, newPass);
-        const newToken = await auth.login(
-          newUser,
-          newPass,
-          userTypes[UserKeyType]
-        );
+        const newToken = await auth.login(newUser, newPass, users[user]);
         expect(typeof newToken).toBe("string");
         const decoded = await auth.checkJWT(token);
-        expect(decoded.type).toBe(userTypes[UserKeyType]);
+        expect(decoded.type).toBe(users[user]);
         await auth.delete(token);
       });
 
       it("testdelete", async () => {
         const username = "testuser";
         const password = "testpass";
-        const id = await auth.register(
-          username,
-          password,
-          userTypes[UserKeyType]
-        );
+        const id = await auth.register(username, password, users[user]);
         expect(typeof id).toBe("string");
-        const token = await auth.login(
-          username,
-          password,
-          userTypes[UserKeyType]
-        );
+        const token = await auth.login(username, password, users[user]);
         expect(typeof token).toBe("string");
         await auth.delete(token);
         await expect(
-          auth.login(username, password, userTypes[UserKeyType])
+          auth.login(username, password, users[user])
         ).rejects.toThrow(this.USER_DONT_EXISTS);
       });
 
       it("testAlreadyExistinguser", async () => {
         const username = "testuser";
         const password = "testpass";
-        const id = await auth.register(
-          username,
-          password,
-          userTypes[UserKeyType]
-        );
+        const id = await auth.register(username, password, users[user]);
         expect(typeof id).toBe("string");
         await expect(
-          auth.register(username, password, userTypes[UserKeyType])
+          auth.register(username, password, users[user])
         ).rejects.toThrow(this.USER_EXISTS);
       });
       it("badTokenTest", async () => {
@@ -172,20 +138,12 @@ describe("MitiAuth", () => {
       it("logout", async () => {
         const username = "testuser2";
         const password = "testpass2";
-        const id = await auth.register(
-          username,
-          password,
-          userTypes[UserKeyType]
-        );
+        const id = await auth.register(username, password, users[user]);
         expect(typeof id).toBe("string");
-        const token = await auth.login(
-          username,
-          password,
-          userTypes[UserKeyType]
-        );
+        const token = await auth.login(username, password, users[user]);
         expect(typeof token).toBe("string");
         const decoded = await auth.checkJWT(token);
-        expect(decoded.type).toBe(userTypes[UserKeyType]);
+        expect(decoded.type).toBe(users[user]);
         const newtoken = await auth.logout(token);
         expect(auth.checkJWT(newtoken)).rejects.toThrow(
           auth.EXPIRED_TOKEN_ERROR
@@ -196,17 +154,9 @@ describe("MitiAuth", () => {
         const username = "baduser";
         const password = "badpass";
 
-        const id = await auth.register(
-          username,
-          password,
-          userTypes[UserKeyType]
-        );
+        const id = await auth.register(username, password, users[user]);
         expect(typeof id).toBe("string");
-        const token = await auth.login(
-          username,
-          password,
-          userTypes[UserKeyType]
-        );
+        const token = await auth.login(username, password, users[user]);
         const recUsername = await auth.getUsername(token);
         expect(recUsername).toBe(username);
       });

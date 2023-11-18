@@ -32,8 +32,9 @@ class MitiAuth {
 
   async setupDatabase() {
     const promises = [];
-    for (const key in this.msettings.userType) {
-      const value = this.msettings.userType[key];
+    const users = this.msettings.getUserTypes();
+    for (const id in users) {
+      const value = users[id];
       promises.push(
         this.#query(`
       CREATE TABLE IF NOT EXISTS ${value}${this.table} (
@@ -156,7 +157,7 @@ class MitiAuth {
     }
   }
   checkUserType(type) {
-    if (!Object.values(this.msettings.userType).includes(type)) {
+    if (!Object.values(this.msettings.getUserTypes()).includes(type)) {
       throw this.INVALID_USER_TYPE;
     }
   }

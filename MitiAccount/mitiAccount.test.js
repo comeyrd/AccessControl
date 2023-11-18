@@ -34,6 +34,7 @@ const mysqlConfig = {
 
 let mysqlPool;
 let con;
+const mitisett = new MitiSettings();
 describe("MitiAccount", () => {
   let account;
   let auth;
@@ -43,13 +44,9 @@ describe("MitiAccount", () => {
       con = await mysql.createConnection(mysqlConfigFirst);
       await con.query(`CREATE DATABASE ${TEST_DB_NAME}`);
       mysqlPool = await mysql.createPool(mysqlConfig);
-      auth = new MitiAuth(mysqlPool, new MitiSettings(UserType, TableRows));
+      auth = new MitiAuth(mysqlPool, mitisett);
       await auth.setupDatabase();
-      account = new MitiAccount(
-        mysqlPool,
-        auth,
-        new MitiSettings(UserType, TableRows)
-      );
+      account = new MitiAccount(mysqlPool, auth, mitisett);
       await account.setupDatabase();
       th = new AcTestHelper(auth);
     } catch (e) {
@@ -64,24 +61,26 @@ describe("MitiAccount", () => {
   });
 
   describe("MitiAccount", () => {
-    for (const UserKeyType in UserType) {
+    const users = mitisett.getUserTypes();
+    for (const user in users) {
       it("Create userinfo", async () => {
         let randomValues = {};
-        for (const key of account.readRow()) {
-          randomValues[key] = Math.random().toString(36).substring(2, 15);
+        for (const key of mitisett.getUserFields(user)) {
+          randomValues[key.name] = Math.random().toString(36).substring(2, 15);
         }
         const token = await th.createNlogin(
           "username",
           "password",
-          UserType[UserKeyType]
+          users[user]
         );
         const decoded = await auth.checkJWT(token);
         await account.create(randomValues, token);
-        const result = await account.read(token, UserType[UserKeyType]);
+        const result = await account.read(token, users[user]);
         let error = 0;
         for (const key in randomValues) {
           if (randomValues[key] !== result[key]) {
             error = error + 1;
+            console.log(key);
           }
         }
         if (result["username"] !== "username") {
@@ -95,17 +94,17 @@ describe("MitiAccount", () => {
       });
       it("Create & Update userinfo", async () => {
         let randomValues = {};
-        for (const key of account.readRow()) {
-          randomValues[key] = Math.random().toString(36).substring(2, 15);
+        for (const key of mitisett.getUserFields(user)) {
+          randomValues[key.name] = Math.random().toString(36).substring(2, 15);
         }
         const token = await th.createNlogin(
           "username",
           "password",
-          UserType[UserKeyType]
+          users[user]
         );
         await account.create(randomValues, token);
-        for (const key of account.readRow()) {
-          randomValues[key] = Math.random().toString(36).substring(2, 15);
+        for (const key of mitisett.getUserFields(user)) {
+          randomValues[key.name] = Math.random().toString(36).substring(2, 15);
         }
 
         await account.update(randomValues, token);
@@ -124,13 +123,13 @@ describe("MitiAccount", () => {
       });
       it("Update not existing userinfo", async () => {
         let randomValues = {};
-        for (const key of account.readRow()) {
-          randomValues[key] = Math.random().toString(36).substring(2, 15);
+        for (const key of mitisett.getUserFields(user)) {
+          randomValues[key.name] = Math.random().toString(36).substring(2, 15);
         }
         const token = await th.createNlogin(
           "username",
           "password",
-          UserType[UserKeyType]
+          users[user]
         );
         await expect(account.update(randomValues, token)).rejects.toThrow(
           account.NO_USER_INFO
@@ -139,13 +138,13 @@ describe("MitiAccount", () => {
       });
       it("Read not existing userinfo", async () => {
         let randomValues = {};
-        for (const key of account.readRow()) {
-          randomValues[key] = Math.random().toString(36).substring(2, 15);
+        for (const key of mitisett.getUserFields(user)) {
+          randomValues[key.name] = Math.random().toString(36).substring(2, 15);
         }
         const token = await th.createNlogin(
           "username",
           "password",
-          UserType[UserKeyType]
+          users[user]
         );
         await account.create(randomValues, token);
         await account.delete(token);
@@ -156,7 +155,7 @@ describe("MitiAccount", () => {
         const token = await th.createNlogin(
           "username",
           "password",
-          UserType[UserKeyType]
+          users[user]
         );
         await expect(account.delete(token)).rejects.toThrow(
           account.NO_USER_INFO
@@ -168,10 +167,10 @@ describe("MitiAccount", () => {
         const token = await th.createNlogin(
           "username",
           "password",
-          UserType[UserKeyType]
+          users[user]
         );
-        for (const key of account.readRow()) {
-          randomValues[key] = Math.random().toString(36).substring(2, 15);
+        for (const key of mitisett.getUserFields(user)) {
+          randomValues[key.name] = Math.random().toString(36).substring(2, 15);
         }
         await account.create(randomValues, token);
         await expect(account.create(randomValues, token)).rejects.toThrow(
@@ -182,14 +181,14 @@ describe("MitiAccount", () => {
       });
       it("Create bad userinfo", async () => {
         let randomValues = {};
-        let aaa = account.readRow();
+        let aaa = mitisett.getUserFields(user);
         for (let i = 0; i < 3; i++) {
           randomValues[aaa[i]] = Math.random().toString(36).substring(2, 15);
         }
         const token = await th.createNlogin(
           "username",
           "password",
-          UserType[UserKeyType]
+          users[user]
         );
         await auth.checkJWT(token);
         expect(account.create(randomValues, token)).rejects.toThrow(
@@ -198,7 +197,7 @@ describe("MitiAccount", () => {
         await auth.delete(token);
       });
       it("Check the scheme", async () => {
-        console.log(account.getScheme());
+        console.log(account.getScheme(users[user]));
       });
     }
   });

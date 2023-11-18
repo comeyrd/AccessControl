@@ -26,18 +26,19 @@ class MitiAccount {
 
   async setupDatabase() {
     const promises = [];
-    let query = "";
-    for (const key in this.msettings.tableRows) {
-      query += `${key} ${this.msettings.tableRows[key]}, `;
-    }
-    query = query.slice(0, -2);
-
-    for (const key in this.msettings.userType) {
-      const value = this.msettings.userType[key];
+    const usrType = this.msettings.getUserTypes();
+    for (const user in usrType) {
+      const info = this.msettings.getSqlInfo(user);
+      let query = "";
+      for (const val in info) {
+        query += `${val} ${info[val]}, `;
+      }
+      query = query.slice(0, -2);
+      const value = usrType[user];
       promises.push(
         this
           .#query(`CREATE TABLE IF NOT EXISTS ${value}${this.table} (id VARCHAR(36) NOT NULL PRIMARY KEY,${query}
-      )
+      );
     `)
       );
     }
@@ -45,9 +46,9 @@ class MitiAccount {
   }
 
   async create(userObject, authToken) {
-    this.validateUserObject(userObject);
     const decoded = await this.mitiAuth.checkJWT(authToken);
     const type = decoded.type;
+    this.validateUserObject(userObject, type);
     this.checkType(type);
     let error = false;
     try {
@@ -58,12 +59,12 @@ class MitiAccount {
     if (!error) {
       throw this.ACCOUNT_EXISTS;
     }
-    const rows = Object.keys(this.msettings.tableRows).join(", ");
-    const values = Object.keys(this.msettings.tableRows)
+    const rows = Object.keys(userObject).join(", ");
+    const values = Object.keys(userObject)
       .map(() => `?`)
       .join(", ");
     const params = [decoded.userId].concat(
-      Object.keys(this.msettings.tableRows).map((key) => userObject[key])
+      Object.keys(userObject).map((key) => userObject[key])
     );
 
     const createSQL = `INSERT INTO ${type}${this.table} (id,${rows}) VALUES (?, ${values})`;
@@ -73,17 +74,16 @@ class MitiAccount {
     }
   }
 
-  readRow() {
-    return Object.keys(this.msettings.tableRows);
-  }
-
   async read(authToken) {
     const decoded = await this.mitiAuth.checkJWT(authToken);
     const username = await this.mitiAuth.getUsername(authToken);
     const id = decoded.userId;
     const type = decoded.type;
     this.checkType(type);
-    const columnNames = Object.keys(this.msettings.tableRows).join(", ");
+
+    const columnNames = Object.keys(
+      this.msettings.getSqlInfo(this.msettings.reverseUsrType(type))
+    ).join(", ");
     const selectSQL = `SELECT ${columnNames} FROM ${type}${this.table} WHERE id = ?`;
     const params = [id];
     const selectQuery = await this.#query(selectSQL, params);
@@ -95,19 +95,17 @@ class MitiAccount {
     return object;
   }
   async update(userObject, authToken) {
-    this.validateUserObject(userObject);
     const decoded = await this.mitiAuth.checkJWT(authToken);
     const id = decoded.userId;
     const type = decoded.type;
+    this.validateUserObject(userObject, type);
     this.checkType(type);
     await this.read(authToken);
     let updateMagic = "";
     let params = [];
-    for (const key in this.msettings.tableRows) {
-      if (this.msettings.tableRows.hasOwnProperty(key)) {
-        updateMagic += `${key} = ?, `;
-        params.push(userObject[key]);
-      }
+    for (const key in userObject) {
+      updateMagic += `${key} = ?, `;
+      params.push(userObject[key]);
     }
     params.push(id);
     // Remove the last ", " from rows and values
@@ -127,26 +125,20 @@ class MitiAccount {
     await this.#query(updateSQL, params);
   }
 
-  validateUserObject(userObject) {
-    const keys = Object.keys(this.msettings.tableRows);
-    for (const key of keys) {
-      if (!(key in userObject)) {
-        throw this.INVALID_USER_INFO;
-      }
-      if (typeof userObject[key] !== this.convertType(key)) {
-        throw this.INVALID_USER_INFO;
-      }
+  validateUserObject(userObject, type) {
+    if (this.msettings.checkUserInfo(type, userObject)) {
+      return;
+    } else {
+      throw this.INVALID_USER_INFO;
     }
   }
-
-  convertType(key) {
-    return this.typeTranslation[this.msettings.tableRows[key]];
-  }
   checkType(type) {
-    if (!Object.values(this.msettings.userType).includes(type)) {
+    if (!this.msettings.checkType(type)) {
       throw this.INVALID_USER_TYPE;
     }
   }
+  getScheme(usrType) {
+    return this.msettings.object[this.msettings.reverseUsrType(usrType)].info;
+  }
 }
-
 export default MitiAccount;
