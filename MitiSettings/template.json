@@ -1,20 +1,16 @@
-[
-  {
-    "ADMIN": {
-      "id": "admin",
-      "info": {
-        "email": { "type": "string", "pretty": "Email" },
-        "phone": { "type": "string", "pretty": "Phone Number" }
-      }
-    }
+ {
+  "ADMIN": {
+    "id": "admin",
+    "info": {
+      "email": { "type": "string", "pretty": "Email" },
+      "phone": { "type": "string", "pretty": "Phone Number" },
+    },
   },
-  {
-    "REGULAR": {
-      "id": "regular",
-      "info": {
-        "email": { "type": "string", "pretty": "Email" },
-        "lastname": { "type": "string", "pretty": "Last Name" }
-      }
-    }
-  }
-]
+  "REGULAR": {
+    "id": "regular",
+    "info": {
+      "email": { "type": "string", "pretty": "Email" },
+      "lastname": { "type": "string", "pretty": "Last Name" },
+    },
+  },
+};

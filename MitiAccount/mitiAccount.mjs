@@ -137,8 +137,10 @@ class MitiAccount {
       throw this.INVALID_USER_TYPE;
     }
   }
-  getScheme(usrType) {
-    return this.msettings.object[this.msettings.reverseUsrType(usrType)].info;
+  async getScheme(token) {
+    const decoded = await this.mitiAuth.checkJWT(token);
+    return this.msettings.object[this.msettings.reverseUsrType(decoded.type)]
+      .info;
   }
 }
 export default MitiAccount;

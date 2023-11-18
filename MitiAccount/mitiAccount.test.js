@@ -102,6 +102,8 @@ describe("MitiAccount", () => {
           "password",
           users[user]
         );
+        console.log(await account.getScheme(token));
+
         await account.create(randomValues, token);
         for (const key of mitisett.getUserFields(user)) {
           randomValues[key.name] = Math.random().toString(36).substring(2, 15);
@@ -195,9 +197,6 @@ describe("MitiAccount", () => {
           "Invalid User Informations"
         );
         await auth.delete(token);
-      });
-      it("Check the scheme", async () => {
-        console.log(account.getScheme(users[user]));
       });
     }
   });

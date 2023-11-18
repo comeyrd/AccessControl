@@ -46,20 +46,26 @@ class MitiSettings {
     for (const role in newObject) {
       const user = newObject[role];
       if (!role) {
-        return false; // Role name missing
+        console.log("ole name missing");
+        return false;
       }
       if (!user.id || typeof user.id !== "string") {
-        return false; // Missing or invalid id
+        console.log("Missing or invalid id");
+        return false; //
       }
       if (idSet.has(user.id)) {
+        console.log("Duplicate id found");
         return false; // Duplicate id found
       }
       idSet.add(user.id);
       if (!user.info || typeof user.info !== "object") {
+        console.log("Missing or invalid info object");
         return false; // Missing or invalid info object
       }
       const infoAttributes = Object.keys(user.info);
       if (infoAttributes.length === 0) {
+        console.log("At least one attribute is required in the info object");
+
         return false; // At least one attribute is required in the info object
       }
       for (const attr of infoAttributes) {
@@ -70,6 +76,7 @@ class MitiSettings {
           (typeof user.info[attr].type !== "string" &&
             !this.getTypes().includes(user.info[attr].type))
         ) {
+          console.log("Invalid attribute format in info");
           return false; // Invalid attribute format in info
         }
       }
