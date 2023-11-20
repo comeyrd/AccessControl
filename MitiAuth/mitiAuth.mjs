@@ -46,7 +46,6 @@ class MitiAuth {
       const id = createRandomId();
       const query = `SELECT IF(COUNT(*) > 0, 1, 0) AS isUsed FROM ${type}${this.table} WHERE id = ?`;
       const rows = await this.#query(query, [id]);
-      console.log(rows[0]);
       if (rows[0].isUsed === 0) {
         return id;
       }
