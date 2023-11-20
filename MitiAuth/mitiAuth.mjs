@@ -1,16 +1,27 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { v4 } from "uuid";
+import crypto from "crypto";
 import MitiSettings from "miti-settings";
 const defaultUser = {
   ADMIN: "admin",
   REGULAR: "regular",
 };
+const startDate = new Date("2023-01-01");
+const randLen = 5;
+function createRandomId() {
+  const currentDate = new Date();
+  // Calculate the time difference in milliseconds
+  const timeDifference = currentDate.getTime() - startDate.getTime();
+  const charrep = timeDifference.toString(36);
+  const randomBytes = crypto.randomBytes(randLen);
+  const randomString = randomBytes.toString("hex");
+  return charrep + "-" + randomString;
+}
 
 class MitiAuth {
   table = "_users";
   jwtExpiration = 3 * 24 * 60 * 60 * 1000; //3Days
-  jwtSecret = v4();
+  jwtSecret = createRandomId();
   EXPIRED_TOKEN_ERROR = new Error("Expired Token");
   INVALID_TOKEN_ERROR = new Error("Invalid Token");
   INVALID_USER_TYPE = new Error("Invalid User Type");
@@ -30,6 +41,17 @@ class MitiAuth {
     return rows;
   }
 
+  async getNewUID(type) {
+    while (true) {
+      const id = createRandomId();
+      const query = `SELECT IF(COUNT(*) > 0, 1, 0) AS isUsed FROM ${type}${this.table} WHERE id = ?`;
+      const rows = await this.#query(query, [id]);
+      console.log(rows[0]);
+      if (rows[0].isUsed === 0) {
+        return id;
+      }
+    }
+  }
   async setupDatabase() {
     const promises = [];
     const users = this.msettings.getUserTypes();
@@ -57,10 +79,10 @@ class MitiAuth {
     if (rows.length != 0) {
       throw this.USER_EXISTS;
     }
-    const uuidv4 = v4();
+    const rid = await this.getNewUID(type);
     const hashedPassword = await bcrypt.hash(password, 10);
     const insertQuery = `INSERT INTO ${type}${this.table} (id, username, password) VALUES (?, ?, ?)`;
-    const params = [uuidv4, username, hashedPassword];
+    const params = [rid, username, hashedPassword];
     await this.#query(insertQuery, params);
     return this.login(username, password, type);
   }
