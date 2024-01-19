@@ -10,6 +10,9 @@
     "jsonwebtoken": "^9.0.0",
     "mysql": "^2.18.1",
     "mysql2": "^3.3.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "miti-account": "file:./MitiAccount",
+    "miti-auth": "file:./MitiAuth",
+    "miti-settings": "file:./MitiSettings"
   }
 }
