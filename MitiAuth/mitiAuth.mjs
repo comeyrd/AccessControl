@@ -21,6 +21,7 @@ function createRandomId() {
 class MitiAuth {
   table = "_users";
   jwtExpiration = 3 * 24 * 60 * 60 * 1000; //3Days
+  logoutExpiration = 1;
   jwtSecret = createRandomId();
   EXPIRED_TOKEN_ERROR = new Error("Expired Token");
   INVALID_TOKEN_ERROR = new Error("Invalid Token");
@@ -167,7 +168,7 @@ class MitiAuth {
     const userIdD = decoded.userId;
     const typeD = decoded.type;
     return jwt.sign({ userIdD, typeD }, this.jwtSecret, {
-      expiresIn: -1, //1 equals expires in 1ms.
+      expiresIn: logoutExpiration, //1 equals expires in 1ms.
     });
   }
   processJWTError(error) {
