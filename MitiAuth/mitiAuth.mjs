@@ -2,10 +2,6 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import MitiSettings from "miti-settings";
-const defaultUser = {
-  ADMIN: "admin",
-  REGULAR: "regular",
-};
 const startDate = new Date("2023-01-01");
 const randLen = 5;
 function createRandomId() {
@@ -188,6 +184,11 @@ class MitiAuth {
       throw this.BAD_PARAMS;
     }
   }
+//ADMIN
+async list() {
+  //TODO For each type, list the datas inside the tables
+}
+
 }
 
 export default MitiAuth;

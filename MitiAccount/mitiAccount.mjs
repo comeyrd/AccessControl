@@ -142,5 +142,9 @@ class MitiAccount {
     return this.msettings.object[this.msettings.reverseUsrType(decoded.type)]
       .info;
   }
+  //ADMIN
+  async list() {
+    //TODO For each type, list the datas inside the tables
+  }
 }
 export default MitiAccount;
