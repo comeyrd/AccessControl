@@ -69,12 +69,7 @@ class MitiAuth {
   async register(username, password, type) {
     this.checkUserType(type);
     this.checkParams(username, password);
-    //verifier si l'user existe
-    const selectQuery = `SELECT id FROM ${type}${this.table} WHERE username = ?`;
-    const rows = await this.#query(selectQuery, [username]);
-    if (rows.length != 0) {
-      throw this.USER_EXISTS;
-    }
+    await this.checkUnsedUsername(username);
     const rid = await this.getNewUID(type);
     const hashedPassword = await bcrypt.hash(password, 10);
     const insertQuery = `INSERT INTO ${type}${this.table} (id, username, password) VALUES (?, ?, ?)`;
@@ -184,11 +179,16 @@ class MitiAuth {
       throw this.BAD_PARAMS;
     }
   }
-//ADMIN
-async list() {
-  //TODO For each type, list the datas inside the tables
-}
-
+  async checkUnsedUsername(username) {
+    //verifier si un user avec cet username existe
+    for (const type of Object.values(this.msettings.getUserTypes())) {
+      const selectQuery = `SELECT id FROM ${type}${this.table} WHERE username = ?`;
+      const rows = await this.#query(selectQuery, [username]);
+      if (rows.length != 0) {
+        throw this.USER_EXISTS;
+      }
+    }
+  }
 }
 
 export default MitiAuth;
