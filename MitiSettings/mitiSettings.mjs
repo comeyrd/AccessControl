@@ -85,19 +85,14 @@ class MitiSettings {
     return true;
   }
 
-  getUserFields(userId) {
-    if (this.getUserTypes()[userId]) {
-      const userInfo = this.object[userId].info;
-      const rows = [];
-      for (const prop in userInfo) {
-        rows.push({ name: prop, pretty: userInfo[prop].pretty });
-      }
-      return rows;
-    } else {
-      // Handle the case when the userId is not found
-      console.error(`User with ID ${userId} not found.`);
-      return [];
+  getUserFields(type) {
+    const userId = this.reverseUsrType(type)
+    const userInfo = this.object[userId].info;
+    const rows = [];
+    for (const prop in userInfo) {
+      rows.push({ name: prop, pretty: userInfo[prop].pretty });
     }
+    return rows;
   }
 
   checkUserInfo(id, userinfo) {

@@ -159,7 +159,7 @@ class MitiAuth {
     const userIdD = decoded.userId;
     const typeD = decoded.type;
     return jwt.sign({ userIdD, typeD }, this.jwtSecret, {
-      expiresIn: logoutExpiration, //1 equals expires in 1ms.
+      expiresIn: this.logoutExpiration, //1 equals expires in 1ms.
     });
   }
   processJWTError(error) {
