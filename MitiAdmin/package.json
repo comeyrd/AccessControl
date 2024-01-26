@@ -1,0 +1,12 @@
+{
+    "type": "module",
+    "name": "miti-admin",
+    "version": "1.0.0",
+    "main": "mitiAdmin.mjs",
+    "scripts": {
+        "test": "vitest"
+      },
+      "dependencies": {
+        "miti-settings": "file:./../MitiSettings"
+      }
+}

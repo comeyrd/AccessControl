@@ -2,10 +2,6 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import MitiSettings from "miti-settings";
-const defaultUser = {
-  ADMIN: "admin",
-  REGULAR: "regular",
-};
 const startDate = new Date("2023-01-01");
 const randLen = 5;
 function createRandomId() {
@@ -21,6 +17,7 @@ function createRandomId() {
 class MitiAuth {
   table = "_users";
   jwtExpiration = 3 * 24 * 60 * 60 * 1000; //3Days
+  logoutExpiration = 1;
   jwtSecret = createRandomId();
   EXPIRED_TOKEN_ERROR = new Error("Expired Token");
   INVALID_TOKEN_ERROR = new Error("Invalid Token");
@@ -72,12 +69,7 @@ class MitiAuth {
   async register(username, password, type) {
     this.checkUserType(type);
     this.checkParams(username, password);
-    //verifier si l'user existe
-    const selectQuery = `SELECT id FROM ${type}${this.table} WHERE username = ?`;
-    const rows = await this.#query(selectQuery, [username]);
-    if (rows.length != 0) {
-      throw this.USER_EXISTS;
-    }
+    await this.checkUnsedUsername(username);
     const rid = await this.getNewUID(type);
     const hashedPassword = await bcrypt.hash(password, 10);
     const insertQuery = `INSERT INTO ${type}${this.table} (id, username, password) VALUES (?, ?, ?)`;
@@ -167,7 +159,7 @@ class MitiAuth {
     const userIdD = decoded.userId;
     const typeD = decoded.type;
     return jwt.sign({ userIdD, typeD }, this.jwtSecret, {
-      expiresIn: -1, //1 equals expires in 1ms.
+      expiresIn: this.logoutExpiration, //1 equals expires in 1ms.
     });
   }
   processJWTError(error) {
@@ -185,6 +177,16 @@ class MitiAuth {
   checkParams(user, pass) {
     if (typeof user !== "string" || typeof pass !== "string") {
       throw this.BAD_PARAMS;
+    }
+  }
+  async checkUnsedUsername(username) {
+    //verifier si un user avec cet username existe
+    for (const type of Object.values(this.msettings.getUserTypes())) {
+      const selectQuery = `SELECT id FROM ${type}${this.table} WHERE username = ?`;
+      const rows = await this.#query(selectQuery, [username]);
+      if (rows.length != 0) {
+        throw this.USER_EXISTS;
+      }
     }
   }
 }

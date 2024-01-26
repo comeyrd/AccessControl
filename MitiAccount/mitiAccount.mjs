@@ -80,7 +80,7 @@ class MitiAccount {
     const id = decoded.userId;
     const type = decoded.type;
     this.checkType(type);
-
+    const pretty = this.msettings.getUserFields(type);
     const columnNames = Object.keys(
       this.msettings.getSqlInfo(this.msettings.reverseUsrType(type))
     ).join(", ");
@@ -90,9 +90,15 @@ class MitiAccount {
     if (selectQuery.length === 0) {
       throw this.NO_USER_INFO;
     }
-    var object = selectQuery[0];
+    const object = selectQuery[0];
     object["username"] = username;
-    return object;
+    pretty.push({"name":"username","pretty":"Username"});
+    let retobj={};
+    pretty.forEach(item => {
+      const { name, pretty } = item;
+      retobj[name] = { data: object[name], pretty };
+    });
+    return retobj;
   }
   async update(userObject, authToken) {
     const decoded = await this.mitiAuth.checkJWT(authToken);
