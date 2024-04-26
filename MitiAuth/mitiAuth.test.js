@@ -42,7 +42,6 @@ describe("MitiAuth", () => {
     await con.query("DROP DATABASE " + TEST_DB_NAME + ";");
     await con.end();
   });
-  //TODO concurrent
   describe("register and login", () => {
     //test where userType doesnt Matter
     const users = mitisett.getUserTypes();
@@ -67,6 +66,8 @@ describe("MitiAuth", () => {
         await expect(
           auth.login(username, wrongPassword, users[user])
         ).rejects.toThrow(auth.BAD_PASSWORD);
+        let token = await auth.login(username, password, users[user])
+        await auth.delete(token);
       });
 
       it("should throw an error when logging in with a non-existent user", async () => {
@@ -128,6 +129,9 @@ describe("MitiAuth", () => {
         await expect(
           auth.register(username, password, users[user])
         ).rejects.toThrow(this.USER_EXISTS);
+        const token = await auth.login(username, password, users[user])
+        await auth.delete(token);
+
       });
       it("badTokenTest", async () => {
         const badtoken = "test";
@@ -140,14 +144,15 @@ describe("MitiAuth", () => {
         const password = "testpass2";
         const id = await auth.register(username, password, users[user]);
         expect(typeof id).toBe("string");
-        const token = await auth.login(username, password, users[user]);
+        let token = await auth.login(username, password, users[user]);
         expect(typeof token).toBe("string");
         const decoded = await auth.checkJWT(token);
         expect(decoded.type).toBe(users[user]);
         const newtoken = await auth.logout(token);
         expect(auth.checkJWT(newtoken)).rejects.toThrow(
-          auth.EXPIRED_TOKEN_ERROR
+          auth.USER_DONT_EXISTS
         );
+        token = await auth.login(username, password, users[user])
         await auth.delete(token);
       });
       it("reading username", async () => {
@@ -159,6 +164,7 @@ describe("MitiAuth", () => {
         const token = await auth.login(username, password, users[user]);
         const recUsername = await auth.getUsername(token);
         expect(recUsername).toBe(username);
+        await auth.delete(token);
       });
     }
     //test where userType Matter

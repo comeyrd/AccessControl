@@ -38,10 +38,10 @@ class MitiAuth {
     return rows;
   }
 
-  async getNewUID(type) {
+  async getNewUID() {
     while (true) {
       const id = createRandomId();
-      const query = `SELECT IF(COUNT(*) > 0, 1, 0) AS isUsed FROM ${type}${this.table} WHERE id = ?`;
+      const query = `SELECT IF(COUNT(*) > 0, 1, 0) AS isUsed FROM ${this.table} WHERE id = ?`;
       const rows = await this.#query(query, [id]);
       if (rows[0].isUsed === 0) {
         return id;
@@ -50,19 +50,14 @@ class MitiAuth {
   }
   async setupDatabase() {
     const promises = [];
-    const users = this.msettings.getUserTypes();
-    for (const id in users) {
-      const value = users[id];
       promises.push(
         this.#query(`
-      CREATE TABLE IF NOT EXISTS ${value}${this.table} (
+      CREATE TABLE IF NOT EXISTS ${this.table} (
         id VARCHAR(36) NOT NULL PRIMARY KEY,
         username VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL
       )
-    `)
-      );
-    }
+    `));
     return Promise.all(promises);
   }
 
@@ -70,9 +65,9 @@ class MitiAuth {
     this.checkUserType(type);
     this.checkParams(username, password);
     await this.checkUnsedUsername(username);
-    const rid = await this.getNewUID(type);
+    const rid = await this.getNewUID();
     const hashedPassword = await bcrypt.hash(password, 10);
-    const insertQuery = `INSERT INTO ${type}${this.table} (id, username, password) VALUES (?, ?, ?)`;
+    const insertQuery = `INSERT INTO ${this.table} (id, username, password) VALUES (?, ?, ?)`;
     const params = [rid, username, hashedPassword];
     await this.#query(insertQuery, params);
     return this.login(username, password, type);
@@ -81,7 +76,7 @@ class MitiAuth {
   async login(username, password, type) {
     this.checkUserType(type);
     this.checkParams(username, password);
-    const query = `SELECT id, password FROM ${type}${this.table} WHERE username = ?`;
+    const query = `SELECT id, password FROM ${this.table} WHERE username = ?`;
     const rows = await this.#query(query, [username]);
     if (rows.length === 0) {
       throw this.USER_DONT_EXISTS;
@@ -101,7 +96,7 @@ class MitiAuth {
     this.checkParams(newusername, newpassword);
     const decoded = await this.checkJWT(token);
     const hashedPassword = await bcrypt.hash(newpassword, 10);
-    const query = `UPDATE ${decoded.type}${this.table} SET username= ?, password= ? WHERE id = ? ;`;
+    const query = `UPDATE ${this.table} SET username= ?, password= ? WHERE id = ? ;`;
     const params = [newusername, hashedPassword, decoded.userId];
     await this.#query(query, params);
     return true;
@@ -109,7 +104,7 @@ class MitiAuth {
 
   async getUsername(token) {
     const decoded = await this.checkJWT(token);
-    const query = `SELECT username FROM  ${decoded.type}${this.table} WHERE id = ? ;`;
+    const query = `SELECT username FROM  ${this.table} WHERE id = ? ;`;
     const params = [decoded.userId];
     const selectQuery = await this.#query(query, params);
     if (selectQuery.length === 0) {
@@ -120,7 +115,7 @@ class MitiAuth {
 
   async delete(token) {
     const decoded = await this.checkJWT(token);
-    const query = `DELETE FROM ${decoded.type}${this.table} WHERE id = ?`;
+    const query = `DELETE FROM ${this.table} WHERE id = ?`;
     const params = [decoded.userId];
     const result = await this.#query(query, params);
     if (result.affectedRows === 1) {
@@ -148,7 +143,7 @@ class MitiAuth {
   }
 
   async checkExists(decoded) {
-    const selectQuery = `SELECT username FROM ${decoded.type}${this.table} WHERE id = ?`;
+    const selectQuery = `SELECT username FROM ${this.table} WHERE id = ?`;
     const rows = await this.#query(selectQuery, [decoded.userId]);
     if (rows.length == 0) {
       throw this.USER_DONT_EXISTS;
@@ -181,13 +176,11 @@ class MitiAuth {
   }
   async checkUnsedUsername(username) {
     //verifier si un user avec cet username existe
-    for (const type of Object.values(this.msettings.getUserTypes())) {
-      const selectQuery = `SELECT id FROM ${type}${this.table} WHERE username = ?`;
+      const selectQuery = `SELECT id FROM ${this.table} WHERE username = ?`;
       const rows = await this.#query(selectQuery, [username]);
       if (rows.length != 0) {
         throw this.USER_EXISTS;
       }
-    }
   }
 }
 
