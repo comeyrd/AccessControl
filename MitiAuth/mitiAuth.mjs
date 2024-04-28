@@ -49,16 +49,13 @@ class MitiAuth {
     }
   }
   async setupDatabase() {
-    const promises = [];
-      promises.push(
-        this.#query(`
-      CREATE TABLE IF NOT EXISTS ${this.table} (
-        id VARCHAR(36) NOT NULL PRIMARY KEY,
-        username VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL
-      )
-    `));
-    return Promise.all(promises);
+    return this.#query(`
+    CREATE TABLE IF NOT EXISTS ${this.table} (
+      id VARCHAR(36) NOT NULL PRIMARY KEY,
+      username VARCHAR(255) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL
+    )
+  `);
   }
 
   async register(username, password, type) {
