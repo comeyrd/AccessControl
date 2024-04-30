@@ -5,10 +5,11 @@ import mitiAdmin from "miti-admin";
 import mysql from "mysql2/promise";
 
 class Admin {
-  constructor(layout,mysqlConfig) {
+  constructor(layout,mysqlConfig,admintype) {
     this.layout = layout;
     this.mysqlConfig = mysqlConfig;
     this.mitiSett = new mitiSettings(this.layout);
+    this.atype = admintype;
   }
   async init(){
     this.mysqlPool = await mysql.createPool(this.mysqlConfig);
@@ -31,16 +32,15 @@ class Admin {
     }
     return users;
   }
-  async admin(redirect) {
+  async admn(redirect) {
     return async (req, res, next) => {
       const mapiToken = req.cookies.mapiTok;
       const mapiType = req.cookies.mapiType;
       if (mapiToken && mapiType) {
         try {
-          if (await this.validate(mapiToken)) {
+          if (mapiType === this.atype) {
             next();
           } else {
-            res.cookie("mapiTok", "", deleteCookie);
             res.redirect(redirect);
           }
         } catch (error) {

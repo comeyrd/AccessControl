@@ -53,7 +53,8 @@ class MitiAuth {
     CREATE TABLE IF NOT EXISTS ${this.table} (
       id VARCHAR(36) NOT NULL PRIMARY KEY,
       username VARCHAR(255) NOT NULL UNIQUE,
-      password VARCHAR(255) NOT NULL
+      password VARCHAR(255) NOT NULL,
+      type VARCHAR(255) NOT NULL
     )
   `);
   }
@@ -64,22 +65,23 @@ class MitiAuth {
     await this.checkUnsedUsername(username);
     const rid = await this.getNewUID();
     const hashedPassword = await bcrypt.hash(password, 10);
-    const insertQuery = `INSERT INTO ${this.table} (id, username, password) VALUES (?, ?, ?)`;
-    const params = [rid, username, hashedPassword];
+    const insertQuery = `INSERT INTO ${this.table} (id, username, password, type) VALUES (?, ?, ?, ?)`;
+    const params = [rid, username, hashedPassword,type];
     await this.#query(insertQuery, params);
     return this.login(username, password, type);
   }
 
-  async login(username, password, type) {
-    this.checkUserType(type);
+  async login(username, password) {
     this.checkParams(username, password);
-    const query = `SELECT id, password FROM ${this.table} WHERE username = ?`;
+    const query = `SELECT id, password, type FROM ${this.table} WHERE username = ?`;
     const rows = await this.#query(query, [username]);
     if (rows.length === 0) {
       throw this.USER_DONT_EXISTS;
     }
     const userId = rows[0].id;
     const hashedPassword = rows[0].password;
+    const type = rows[0].type
+    this.checkUserType(type);
     const passwordMatch = await bcrypt.compare(password, hashedPassword);
     if (passwordMatch) {
       return jwt.sign({ userId, type }, this.jwtSecret, {

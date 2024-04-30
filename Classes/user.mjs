@@ -18,20 +18,17 @@ class User {
   }
 
   async login(login, password) {
-    const users = this.mitiSett.getUserTypes();
-    let err;
-    for (const user in users) {
       try {
-        let token = await this.auth.login(login, password, users[user]);
+        let token = await this.auth.login(login, password);
+        let type = (await this.decode(token)).type;
         return {
           token: token,
           expiration: this.auth.jwtExpiration,
-          type: users[user],
+          type: type,
         };
       } catch (error) {
         err = error;
       }
-    }
     throw err;
   }
 

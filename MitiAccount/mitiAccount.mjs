@@ -85,6 +85,7 @@ class MitiAccount {
       this.msettings.getSqlInfo(this.msettings.reverseUsrType(type))
     ).join(", ");
     const selectSQL = `SELECT ${columnNames} FROM ${type}${this.table} WHERE id = ?`;
+
     const params = [id];
     const selectQuery = await this.#query(selectSQL, params);
     if (selectQuery.length === 0) {
