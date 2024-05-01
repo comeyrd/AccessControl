@@ -45,11 +45,11 @@ class User {
     }
   }
 
-  async create(login, password, userObj) {
+  async create(login, password, userObj,type) {
     const token = await this.auth.register(
       login,
       password,
-      this.layout.USER.id
+      type
     );
     await this.account.create(userObj, token);
   }
