@@ -21,7 +21,7 @@ class MitiAdmin {
     const arr_info_rows = Object.keys(this.msettings.getSqlInfo(this.msettings.reverseUsrType(type)));
     const info_rows = arr_info_rows.map(info_row => `${type}${this.mitiAccount.table}.${info_row}`).join(', ');
 
-    const selectSQL = `SELECT ${type}${this.mitiAccount.table}.id, ${info_rows}, ${type}${this.mitiAuth.table}.username FROM ${type}${this.mitiAccount.table} LEFT JOIN ${type}${this.mitiAuth.table} ON ${type}${this.mitiAuth.table}.id = ${type}${this.mitiAccount.table}.id ;`;
+    const selectSQL = `SELECT ${type}${this.mitiAccount.table}.id, ${info_rows}, ${this.mitiAuth.table}.username FROM ${type}${this.mitiAccount.table} LEFT JOIN ${this.mitiAuth.table} ON ${this.mitiAuth.table}.id = ${type}${this.mitiAccount.table}.id ;`;
     //const params = [this.mitiAccount.table,info_rows,this.mitiAuth.table,this.mitiAccount.table,this.mitiAuth.table,this.mitiAuth.table,this.mitiAccount.table]
     const selectQuery = await this.#query(selectSQL,null);
     return selectQuery;

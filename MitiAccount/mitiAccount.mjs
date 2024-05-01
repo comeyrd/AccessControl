@@ -149,5 +149,9 @@ class MitiAccount {
     return this.msettings.object[this.msettings.reverseUsrType(decoded.type)]
       .info;
   }
+  async getSchemeType(type) {
+    return this.msettings.object[this.msettings.reverseUsrType(type)]
+      .info;
+  }
 }
 export default MitiAccount;

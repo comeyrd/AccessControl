@@ -32,6 +32,14 @@ class Admin {
     }
     return users;
   }
+  async listScheme(){
+    let scheme={};
+    const types = this.mitiSett.getUserTypes();
+    for (let type in types){
+     scheme[types[type]] = await this.account.getSchemeType(types[type]);
+    }
+    return scheme;
+  }
   async admn(redirect) {
     return async (req, res, next) => {
       const mapiToken = req.cookies.mapiTok;
