@@ -26,6 +26,10 @@ class MitiAdmin {
     const selectQuery = await this.#query(selectSQL,null);
     return selectQuery;
   }
+  async get_id2uname(){
+    const selectSQL = `SELECT id,username from ${this.mitiAuth.table}`;
+    return await this.#query(selectSQL,null);
+  }
 
   checkType(type) {
     if (!this.msettings.checkType(type)) {

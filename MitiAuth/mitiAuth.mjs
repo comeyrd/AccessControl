@@ -114,8 +114,12 @@ class MitiAuth {
 
   async delete(token) {
     const decoded = await this.checkJWT(token);
+    await this.delete_id(decoded.id);
+  }
+
+  async delete_id(id){
     const query = `DELETE FROM ${this.table} WHERE id = ?`;
-    const params = [decoded.userId];
+    const params = [id];
     const result = await this.#query(query, params);
     if (result.affectedRows === 1) {
       return true;
@@ -124,6 +128,16 @@ class MitiAuth {
     }
   }
 
+  async get_type_from_id(id){
+    const query = `SELECT type FROM  ${this.table} WHERE id = ? ;`;
+    const params = [id];
+    const selectQuery = await this.#query(query, params);
+    if (selectQuery.length === 0) {
+      throw this.NO_USER_INFO;
+    }
+    return selectQuery[0]["type"];
+  }
+  
   async checkJWT(token) {
     return new Promise((resolve, reject) => {
       jwt.verify(token, this.jwtSecret, async (err, decoded) => {

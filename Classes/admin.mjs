@@ -40,6 +40,14 @@ class Admin {
     }
     return scheme;
   }
+  async delete_user(id){
+    await this.account.delete_id(id);
+    await this.auth.delete_id(id);
+  }
+  async get_id2uname(){
+    return await this.admin.get_id2uname();
+  }
+
   async admn(redirect) {
     return async (req, res, next) => {
       const mapiToken = req.cookies.mapiTok;

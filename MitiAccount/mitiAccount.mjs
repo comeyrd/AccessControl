@@ -123,13 +123,19 @@ class MitiAccount {
 
   async delete(authToken) {
     const decoded = await this.mitiAuth.checkJWT(authToken);
-    const id = decoded.userId;
-    const type = decoded.type;
-    await this.read(authToken);
+    await this.delete_from_id_type(decoded.userId,decoded.type)
+  }
+
+  async delete_from_id_type(id,type){
     const params = [id];
     this.checkType(type);
     const updateSQL = `DELETE FROM ${type}${this.table} WHERE id = ? ;`;
     await this.#query(updateSQL, params);
+  }
+
+  async delete_id(id){
+    const type = await this.mitiAuth.get_type_from_id(id);
+    await this.delete_from_id_type(id,type);
   }
 
   validateUserObject(userObject, type) {
