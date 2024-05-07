@@ -11,9 +11,9 @@ class Admin {
     this.mitiSett = new mitiSettings(this.layout);
     this.atype = admintype;
   }
-  async init(){
+  async init(jwt_secret = false) {
     this.mysqlPool = await mysql.createPool(this.mysqlConfig);
-    this.auth = new mitiAuth(this.mysqlPool, this.mitiSett);
+    this.auth = new mitiAuth(this.mysqlPool, this.mitiSett,jwt_secret);
     this.account = new mitiAccount(this.mysqlPool, this.auth, this.mitiSett);
     this.admin = new mitiAdmin(this.mysqlPool,this.auth,this.account,this.mitiSett);
 }

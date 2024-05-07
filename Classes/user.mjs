@@ -11,14 +11,13 @@ class User {
     this.mysqlConfig = mysqlConfig;
     this.mitiSett = new mitiSettings(this.layout);
   }
-  async init() {
+  async init(jwt_secret = false) {
     this.mysqlPool = await mysql.createPool(this.mysqlConfig);
-    this.auth = new mitiAuth(this.mysqlPool, this.mitiSett);
+    this.auth = new mitiAuth(this.mysqlPool, this.mitiSett,jwt_secret);
     this.account = new mitiAccount(this.mysqlPool, this.auth, this.mitiSett);
   }
 
   async login(login, password) {
-      try {
         let token = await this.auth.login(login, password);
         let type = (await this.decode(token)).type;
         return {
@@ -26,10 +25,6 @@ class User {
           expiration: this.auth.jwtExpiration,
           type: type,
         };
-      } catch (error) {
-        err = error;
-      }
-    throw err;
   }
 
   async decode(token) {

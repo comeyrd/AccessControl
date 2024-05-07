@@ -18,7 +18,7 @@ class MitiAuth {
   table = "_users";
   jwtExpiration = 3 * 24 * 60 * 60 * 1000; //3Days
   logoutExpiration = 1;
-  jwtSecret = createRandomId();
+  jwtSecret = "";
   EXPIRED_TOKEN_ERROR = new Error("Expired Token");
   INVALID_TOKEN_ERROR = new Error("Invalid Token");
   INVALID_USER_TYPE = new Error("Invalid User Type");
@@ -27,9 +27,14 @@ class MitiAuth {
   BAD_PASSWORD = new Error("Password and Login does not match");
   BAD_PARAMS = new Error("Bad Params");
 
-  constructor(mysqlPool, mitiSettings = new MitiSettings()) {
+  constructor(mysqlPool, mitiSettings = new MitiSettings(),jwtscrt) {
     this.mysqlPool = mysqlPool;
     this.msettings = mitiSettings;
+    if(jwtscrt === false){
+      this.jwtSecret = createRandomId();
+    }else{
+      this.jwtSecret = jwtscrt;
+    }
   }
 
   async #query(str, params) {
