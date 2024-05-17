@@ -96,12 +96,21 @@ class MitiAuth {
     throw this.BAD_PASSWORD;
   }
 
-  async update(token, newusername, newpassword) {
-    this.checkParams(newusername, newpassword);
+  async update_username(token,newusername){
+    this.checkParams(newusername, newusername);
+    const decoded = await this.checkJWT(token);
+    const query = `UPDATE ${this.table} SET username= ? WHERE id = ? ;`;
+    const params = [newusername, decoded.userId];
+    await this.#query(query, params);
+    return true;
+  }
+  
+  async update_password(token,newpassword){
+    this.checkParams(newpassword, newpassword);
     const decoded = await this.checkJWT(token);
     const hashedPassword = await bcrypt.hash(newpassword, 10);
-    const query = `UPDATE ${this.table} SET username= ?, password= ? WHERE id = ? ;`;
-    const params = [newusername, hashedPassword, decoded.userId];
+    const query = `UPDATE ${this.table} SET password= ? WHERE id = ? ;`;
+    const params = [hashedPassword, decoded.userId];
     await this.#query(query, params);
     return true;
   }

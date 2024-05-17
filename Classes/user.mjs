@@ -26,6 +26,12 @@ class User {
           type: type,
         };
   }
+  async update_username(token,username){
+    await this.auth.update_username(token,username);
+  }
+  async update_password(token,password){
+    await this.auth.update_password(token,password);
+  }
 
   async decode(token) {
     const decoded = await this.auth.checkJWT(token);
