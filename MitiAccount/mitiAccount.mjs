@@ -12,11 +12,11 @@ class MitiAccount {
     // Add more type translations as needed
   };
 
-  INVALID_USER_TYPE = new Error("Invalid User Type");
-  INVALID_USER_INFO = new Error("Invalid User Informations");
-  ACCOUNT_EXISTS = new Error("User Account' Already Exists");
-  ACCOUNT_CREATION = new Error("User Info Creation Error");
-  NO_USER_INFO = new Error("No Account' for this Auth'");
+  INVALID_USER_TYPE = "Invalid User Type";
+  INVALID_USER_INFO = "Invalid User Informations";
+  ACCOUNT_EXISTS = "User Account' Already Exists";
+  ACCOUNT_CREATION = "User Info Creation Error";
+  NO_USER_INFO = "No Account' for this Auth'";
 
   async #query(str, params) {
     const sql = this.mysqlPool.format(str, params);
@@ -57,7 +57,7 @@ class MitiAccount {
       error = true;
     }
     if (!error) {
-      throw this.ACCOUNT_EXISTS;
+      throw new Error(this.ACCOUNT_EXISTS);
     }
     const rows = Object.keys(userObject).join(", ");
     const values = Object.keys(userObject)
@@ -70,7 +70,7 @@ class MitiAccount {
     const createSQL = `INSERT INTO ${type}${this.table} (id,${rows}) VALUES (?, ${values})`;
     const createQuery = await this.#query(createSQL, params);
     if (createQuery["affectedRows"] !== 1) {
-      throw this.ACCOUNT_CREATION;
+      throw new Error(this.ACCOUNT_CREATION);
     }
   }
 
@@ -89,7 +89,7 @@ class MitiAccount {
     const params = [id];
     const selectQuery = await this.#query(selectSQL, params);
     if (selectQuery.length === 0) {
-      throw this.NO_USER_INFO;
+      throw new Error(this.NO_USER_INFO);
     }
     const object = selectQuery[0];
     object["username"] = username;
@@ -142,12 +142,12 @@ class MitiAccount {
     if (this.msettings.checkUserInfo(type, userObject)) {
       return;
     } else {
-      throw this.INVALID_USER_INFO;
+      throw new Error(this.INVALID_USER_INFO);
     }
   }
   checkType(type) {
     if (!this.msettings.checkType(type)) {
-      throw this.INVALID_USER_TYPE;
+      throw new Error(this.INVALID_USER_TYPE);
     }
   }
   async getScheme(token) {

@@ -8,7 +8,7 @@ class MitiAdmin {
     this.mitiAccount = account;
   }
 
-  INVALID_USER_TYPE = new Error("Invalid User Type");
+  INVALID_USER_TYPE = "Invalid User Type";
 
   async #query(str, params) {
     const sql = this.mysqlPool.format(str, params);
@@ -33,7 +33,7 @@ class MitiAdmin {
 
   checkType(type) {
     if (!this.msettings.checkType(type)) {
-      throw this.INVALID_USER_TYPE;
+      throw new Error(this.INVALID_USER_TYPE);
     }
   }
 }

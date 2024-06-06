@@ -19,13 +19,13 @@ class MitiAuth {
   jwtExpiration = 3 * 24 * 60 * 60 * 1000; //3Days
   logoutExpiration = 1;
   jwtSecret = "";
-  EXPIRED_TOKEN_ERROR = new Error("Expired Token");
-  INVALID_TOKEN_ERROR = new Error("Invalid Token");
-  INVALID_USER_TYPE = new Error("Invalid User Type");
-  USER_EXISTS = new Error("User already Exists");
-  USER_DONT_EXISTS = new Error("User doesnt exist");
-  BAD_PASSWORD = new Error("Password and Login does not match");
-  BAD_PARAMS = new Error("Bad Params");
+  EXPIRED_TOKEN_ERROR = "Expired Token";
+  INVALID_TOKEN_ERROR = "Invalid Token";
+  INVALID_USER_TYPE = "Invalid User Type";
+  USER_EXISTS = "User already Exists";
+  USER_DONT_EXISTS = "User doesnt exist";
+  BAD_PASSWORD = "Password and Login does not match";
+  BAD_PARAMS = "Bad Params";
 
   constructor(mysqlPool, mitiSettings = new MitiSettings(),jwtscrt) {
     this.mysqlPool = mysqlPool;
@@ -81,7 +81,7 @@ class MitiAuth {
     const query = `SELECT id, password, type FROM ${this.table} WHERE username = ?`;
     const rows = await this.#query(query, [username]);
     if (rows.length === 0) {
-      throw this.USER_DONT_EXISTS;
+      throw new Error(this.USER_DONT_EXISTS);
     }
     const userId = rows[0].id;
     const hashedPassword = rows[0].password;
@@ -93,7 +93,7 @@ class MitiAuth {
         expiresIn: this.jwtExpiration,
       });
     }
-    throw this.BAD_PASSWORD;
+    throw new Error(this.BAD_PASSWORD);
   }
 
   async update_username(token,newusername){
@@ -121,7 +121,7 @@ class MitiAuth {
     const params = [decoded.userId];
     const selectQuery = await this.#query(query, params);
     if (selectQuery.length === 0) {
-      throw this.NO_USER_INFO;
+      throw new Error(this.NO_USER_INFO);
     }
     return selectQuery[0]["username"];
   }
@@ -138,7 +138,7 @@ class MitiAuth {
     if (result.affectedRows === 1) {
       return true;
     } else {
-      throw this.USER_DONT_EXISTS;
+      throw new Error(this.USER_DONT_EXISTS);
     }
   }
 
@@ -147,7 +147,7 @@ class MitiAuth {
     const params = [id];
     const selectQuery = await this.#query(query, params);
     if (selectQuery.length === 0) {
-      throw this.NO_USER_INFO;
+      throw new Error(this.NO_USER_INFO);
     }
     return selectQuery[0]["type"];
   }
@@ -161,8 +161,8 @@ class MitiAuth {
           try {
             await this.checkExists(decoded);
             resolve(decoded);
-          } catch (error) {
-            reject(error);
+          } catch (Error) {
+            reject(Error);
           }
         }
       });
@@ -173,7 +173,7 @@ class MitiAuth {
     const selectQuery = `SELECT username FROM ${this.table} WHERE id = ?`;
     const rows = await this.#query(selectQuery, [decoded.userId]);
     if (rows.length == 0) {
-      throw this.USER_DONT_EXISTS;
+      throw new Error(this.USER_DONT_EXISTS);
     }
   }
   async logout(token) {
@@ -184,8 +184,8 @@ class MitiAuth {
       expiresIn: this.logoutExpiration, //1 equals expires in 1ms.
     });
   }
-  processJWTError(error) {
-    if (error.name == "TokenExpiredError") {
+  processJWTError(Error) {
+    if (Error.name == "TokenExpiredError") {
       return this.EXPIRED_TOKEN_ERROR;
     } else {
       return this.INVALID_TOKEN_ERROR;
@@ -193,12 +193,12 @@ class MitiAuth {
   }
   checkUserType(type) {
     if (!Object.values(this.msettings.getUserTypes()).includes(type)) {
-      throw this.INVALID_USER_TYPE;
+      throw new Error(this.INVALID_USER_TYPE);
     }
   }
   checkParams(user, pass) {
     if (typeof user !== "string" || typeof pass !== "string") {
-      throw this.BAD_PARAMS;
+      throw new Error(this.BAD_PARAMS);
     }
   }
   async checkUnsedUsername(username) {
@@ -206,7 +206,7 @@ class MitiAuth {
       const selectQuery = `SELECT id FROM ${this.table} WHERE username = ?`;
       const rows = await this.#query(selectQuery, [username]);
       if (rows.length != 0) {
-        throw this.USER_EXISTS;
+        throw new Error(this.USER_EXISTS);
       }
   }
 }
